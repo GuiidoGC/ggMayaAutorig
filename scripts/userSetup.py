@@ -11,4 +11,4 @@ if not cmds.commandPort(":4434", query=True):
 if not cmds.commandPort("localhost:7001", query=True):
     cmds.commandPort(name="localhost:7001")
 
-mu.executeDeferred("from puiastreTools.ui import option_menu; option_menu.puiastre_ui()")
+mu.executeDeferred("from gg_autorig.ui import option_menu; option_menu.gg_autorig_ui()")

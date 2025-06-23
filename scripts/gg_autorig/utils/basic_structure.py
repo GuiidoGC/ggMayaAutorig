@@ -1,6 +1,6 @@
 import maya.cmds as cmds
-from puiastreTools.utils.curve_tool import controller_creator
-from puiastreTools.utils import data_export
+from gg_autorig.utils.curve_tool import controller_creator
+from gg_autorig.utils import data_export
 
 def condition(main_ctl, vis_trn, value):
     """
