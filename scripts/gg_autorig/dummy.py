@@ -1,65 +1,34 @@
 def defaultKnots(count, degree=3):
-    """
-    Gets a default knot vector for a given number of cvs and degrees.
-
-    Args:
-        count(int): The number of cvs. 
-        degree(int): The curve degree. 
-
-    Returns:
-        list: A list of knot values.
-    """
     knots = [0 for i in range(degree)] + [i for i in range(count - degree + 1)]
     knots += [count - degree for i in range(degree)]
     return [float(knot) for knot in knots]
 
 
 def pointOnCurveWeights(cvs, t, degree, knots=None):
-    """
-    Creates a mapping of cvs to curve weight values on a spline curve.
-    While all cvs are required, only the cvs with non-zero weights will be returned.
-    This function is based on de Boor's algorithm for evaluating splines and has been modified to consolidate weights.
-
-    Args:
-        cvs(list): A list of cvs, these are used for the return value.
-        t(float): A parameter value. 
-        degree(int): The curve dimensions. 
-        knots(list): A list of knot values. 
-
-    Returns:
-        list: A list of control point, weight pairs.
-    """
-
-    order = degree + 1  # Our functions often use order instead of degree
+    order = degree + 1
     if len(cvs) <= degree:
-        raise CurveException('Curves of degree %s require at least %s cvs' % (degree, degree + 1))
+        raise CurveException(f"Curves of degree {degree} require at least {degree + 1} cvs")
 
-    knots = knots or defaultKnots(len(cvs), degree)  # Defaults to even knot distribution
+    knots = knots or defaultKnots(len(cvs), degree)
     if len(knots) != len(cvs) + order:
-        raise CurveException('Not enough knots provided. Curves with %s cvs must have a knot vector of length %s. '
-                             'Received a knot vector of length %s: %s. '
-                             'Total knot count must equal len(cvs) + degree + 1.' % (len(cvs), len(cvs) + order,
-                                                                                     len(knots), knots))
+        raise CurveException(f"Not enough knots provided. Curves with {len(cvs)} cvs must have a knot vector of length {len(cvs) + order}. "
+                             f"Received a knot vector of length {len(knots)}: {knots}. "
+                             "Total knot count must equal len(cvs) + degree + 1.")
 
-    # Convert cvs into hash-able indices
     _cvs = cvs
     cvs = [i for i in range(len(cvs))]
 
-    # Remap the t value to the range of knot values.
     min = knots[order] - 1
     max = knots[len(knots) - 1 - order] + 1
     t = (t * (max - min)) + min
 
-    # Determine which segment the t lies in
     segment = degree
     for index, knot in enumerate(knots[order:len(knots) - order]):
         if knot <= t:
             segment = index + order
 
-    # Filter out cvs we won't be using
     cvs = [cvs[j + segment - degree] for j in range(0, degree + 1)]
 
-    # Run a modified version of de Boors algorithm
     cvWeights = [{cv: 1.0} for cv in cvs]
     for r in range(1, degree + 1):
         for j in range(degree, r - 1, -1):
@@ -84,51 +53,31 @@ def pointOnCurveWeights(cvs, t, degree, knots=None):
 
 
 def tangentOnCurveWeights(cvs, t, degree, knots=None):
-    """
-    Creates a mapping of cvs to curve tangent weight values.
-    While all cvs are required, only the cvs with non-zero weights will be returned.
-
-    Args:
-        cvs(list): A list of cvs, these are used for the return value.
-        t(float): A parameter value. 
-        degree(int): The curve dimensions. 
-        knots(list): A list of knot values. 
-
-    Returns:
-        list: A list of control point, weight pairs.
-    """
-
-    order = degree + 1  # Our functions often use order instead of degree
+    order = degree + 1
     if len(cvs) <= degree:
-        raise CurveException('Curves of degree %s require at least %s cvs' % (degree, degree + 1))
+        raise CurveException(f"Curves of degree {degree} require at least {degree + 1} cvs")
 
-    knots = knots or defaultKnots(len(cvs), degree)  # Defaults to even knot distribution
+    knots = knots or defaultKnots(len(cvs), degree)
     if len(knots) != len(cvs) + order:
-        raise CurveException('Not enough knots provided. Curves with %s cvs must have a knot vector of length %s. '
-                             'Received a knot vector of length %s: %s. '
-                             'Total knot count must equal len(cvs) + degree + 1.' % (len(cvs), len(cvs) + order,
-                                                                                     len(knots), knots))
+        raise CurveException(f"Not enough knots provided. Curves with {len(cvs)} cvs must have a knot vector of length {len(cvs) + order}. "
+                             f"Received a knot vector of length {len(knots)}: {knots}. "
+                             "Total knot count must equal len(cvs) + degree + 1.")
 
-    # Remap the t value to the range of knot values.
     min = knots[order] - 1
     max = knots[len(knots) - 1 - order] + 1
     t = (t * (max - min)) + min
 
-    # Determine which segment the t lies in
     segment = degree
     for index, knot in enumerate(knots[order:len(knots) - order]):
         if knot <= t:
             segment = index + order
 
-    # Convert cvs into hash-able indices
     _cvs = cvs
     cvs = [i for i in range(len(cvs))]
 
-    # In order to find the tangent we need to find points on a lower degree curve
-    degree = degree - 1
+    degree -= 1
     qWeights = [{cv: 1.0} for cv in range(0, degree + 1)]
 
-    # Get the DeBoor weights for this lower degree curve
     for r in range(1, degree + 1):
         for j in range(degree, r - 1, -1):
             right = j + 1 + segment - r
@@ -148,7 +97,6 @@ def tangentOnCurveWeights(cvs, t, degree, knots=None):
             qWeights[j] = weights
     weights = qWeights[degree]
 
-    # Take the lower order weights and match them to our actual cvs
     cvWeights = []
     for j in range(0, degree + 1):
         weight = weights[j]
@@ -162,20 +110,6 @@ def tangentOnCurveWeights(cvs, t, degree, knots=None):
 
 
 def pointOnSurfaceWeights(cvs, u, v, uKnots=None, vKnots=None, degree=3):
-    """
-    Creates a mapping of cvs to surface point weight values.
-
-    Args:
-        cvs(list): A list of cv rows, these are used for the return value.
-        u(float): The u parameter value on the curve.
-        v(float): The v parameter value on the curve.
-        uKnots(list, optional): A list of knot integers along u.
-        vKnots(list, optional): A list of knot integers along v.
-        degree(int, optional): The degree of the curve. Minimum is 2.
-
-    Returns:
-        list: A list of control point, weight pairs.
-    """
     matrixWeightRows = [pointOnCurveWeights(row, u, degree, uKnots) for row in cvs]
     matrixWeightColumns = pointOnCurveWeights([i for i in range(len(matrixWeightRows))], v, degree, vKnots)
     surfaceMatrixWeights = []
@@ -187,21 +121,6 @@ def pointOnSurfaceWeights(cvs, u, v, uKnots=None, vKnots=None, degree=3):
 
 
 def tangentUOnSurfaceWeights(cvs, u, v, uKnots=None, vKnots=None, degree=3):
-    """
-    Creates a mapping of cvs to surface tangent weight values along the u axis.
-
-    Args:
-        cvs(list): A list of cv rows, these are used for the return value.
-        u(float): The u parameter value on the curve.
-        v(float): The v parameter value on the curve.
-        uKnots(list, optional): A list of knot integers along u.
-        vKnots(list, optional): A list of knot integers along v.
-        degree(int, optional): The degree of the curve. Minimum is 2.
-
-    Returns:
-        list: A list of control point, weight pairs.
-    """
-
     matrixWeightRows = [pointOnCurveWeights(row, u, degree, uKnots) for row in cvs]
     matrixWeightColumns = tangentOnCurveWeights([i for i in range(len(matrixWeightRows))], v, degree, vKnots)
     surfaceMatrixWeights = []
@@ -213,74 +132,45 @@ def tangentUOnSurfaceWeights(cvs, u, v, uKnots=None, vKnots=None, degree=3):
 
 
 def tangentVOnSurfaceWeights(cvs, u, v, uKnots=None, vKnots=None, degree=3):
-    """
-    Creates a mapping of cvs to surface tangent weight values along the v axis.
-
-    Args:
-        cvs(list): A list of cv rows, these are used for the return value.
-        u(float): The u parameter value on the curve.
-        v(float): The v parameter value on the curve.
-        uKnots(list, optional): A list of knot integers along u.
-        vKnots(list, optional): A list of knot integers along v.
-        degree(int, optional): The degree of the curve. Minimum is 2.
-
-    Returns:
-        list: A list of control point, weight pairs.
-    """
-    # Re-order the cvs
     rowCount = len(cvs)
     columnCount = len(cvs[0])
-    reorderedCvs = [[cvs[row][col] for row in xrange(rowCount)] for col in xrange(columnCount)]
+    reorderedCvs = [[cvs[row][col] for row in range(rowCount)] for col in range(columnCount)]
     return tangentUOnSurfaceWeights(reorderedCvs, v, u, uKnots=vKnots, vKnots=uKnots, degree=degree)
 
 
 class CurveException(BaseException):
-    """ Raised to indicate invalid curve parameters. """
-
-
-# ------- EXAMPLES -------- #
+    pass
 
 
 import math
 from maya import cmds
+import maya.api.OpenMaya as om
 from gg_autorig.utils.curve_tool import controller_creator
 from gg_autorig.utils.curve_tool import init_template_file
 from gg_autorig.utils.space_switch import switch_matrix_space
 
 init_template_file("D:/git/maya/biped_autorig/curves/guides_curves_template.json")
 
-def _testMatrixOnCurve(count=3, pCount=5, degree=2, blend_chain=["L_shoulder_JNT", "L_elbow_JNT"], suffix = "L_upperArm"):
-    """
-    Creates an example curve with the given cv and point counts.
-    
-    Args:
-        count(int): The amount of cvs. 
-        pCount(int): The amount of points to attach to the curve.
-        degree(int): The degree of the curve.
-    """
-
+def _testMatrixOnCurve(count=3, pCount=5, degree=2, blend_chain=["L_shoulderNoRoll_JNT", "L_elbowNoRollEnd_JNT"], suffix="L_upperArm"):
     pCount = pCount or count * 4
 
-    # Create the control points
-    ctl, ctl_grp = controller_creator(suffix, suffixes=["GRP", "ANM"])
+    ctl, ctl_grp = controller_creator(suffix, suffixes=["GRP", "ANM"], lock=["v"])
     cmds.delete(cmds.parentConstraint(blend_chain[0], blend_chain[1], ctl_grp[0], maintainOffset=False))
-    switch_matrix_space(target = ctl, sources  =[blend_chain[0]])
-    
+    switch_matrix_space(target=ctl, sources=[blend_chain[0]])
 
-    cvMatrices = []
-    for driver in [blend_chain[0], ctl, blend_chain[1]]:
+    cvMatrices = [f"{driver}.worldMatrix[0]" for driver in [blend_chain[0], ctl, blend_chain[1]]]
 
-        cvMatrices.append(f"{driver}.worldMatrix[0]") 
+    joints = []
+    composes = []
 
-    # Attach the cubes
     for i in range(pCount):
         t = i / (float(pCount) - 1)
         cmds.select(clear=True)
-        pNode = cmds.joint(name='pJoint%s' % i)
+        pNode = cmds.joint(name=f"pJoint{i}")
+        cube = cmds.polyCube(name=f"pJoint{i}_cube", width=1, height=1, depth=1)[0]   
+        cmds.parent(cube, pNode)
 
-        # Create the position matrix
         if i == pCount - 1:
-            # For the last joint, use custom weights: 0.95 for last cv, 0.05 for second last, 0 for others
             weights = [0.0] * len(cvMatrices)
             weights[-1] = 0.95
             if len(cvMatrices) > 1:
@@ -288,41 +178,98 @@ def _testMatrixOnCurve(count=3, pCount=5, degree=2, blend_chain=["L_shoulder_JNT
             pointMatrixWeights = [[cvMatrices[j], weights[j]] for j in range(len(cvMatrices))]
         else:
             pointMatrixWeights = pointOnCurveWeights(cvMatrices, t, degree=degree)
-        pointMatrixNode = cmds.createNode('wtAddMatrix', name='pointMatrix0%s' % (i+1))
-        pointMatrix = '%s.matrixSum' % pointMatrixNode
+
+        pointMatrixNode = cmds.createNode("wtAddMatrix", name=f"pointMatrix0{i+1}")
+        pointMatrix = f"{pointMatrixNode}.matrixSum"
         for index, (matrix, weight) in enumerate(pointMatrixWeights):
-            cmds.connectAttr(matrix, '%s.wtMatrix[%s].matrixIn' % (pointMatrixNode, index))
-            cmds.setAttr('%s.wtMatrix[%s].weightIn' % (pointMatrixNode, index), weight)
+            cmds.connectAttr(matrix, f"{pointMatrixNode}.wtMatrix[{index}].matrixIn")
+            cmds.setAttr(f"{pointMatrixNode}.wtMatrix[{index}].weightIn", weight)
 
-        # Create the tangent matrix
         tangentMatrixWeights = tangentOnCurveWeights(cvMatrices, t, degree=degree)
-        tangentMatrixNode = cmds.createNode('wtAddMatrix', name='tangentMatrix0%s' % (i+1))
-        tangentMatrix = '%s.matrixSum' % tangentMatrixNode
+        tangentMatrixNode = cmds.createNode("wtAddMatrix", name=f"tangentMatrix0{i+1}")
+        tangentMatrix = f"{tangentMatrixNode}.matrixSum"
         for index, (matrix, weight) in enumerate(tangentMatrixWeights):
-            cmds.connectAttr(matrix, '%s.wtMatrix[%s].matrixIn' % (tangentMatrixNode, index))
-            cmds.setAttr('%s.wtMatrix[%s].weightIn' % (tangentMatrixNode, index), weight)
+            cmds.connectAttr(matrix, f"{tangentMatrixNode}.wtMatrix[{index}].matrixIn")
+            cmds.setAttr(f"{tangentMatrixNode}.wtMatrix[{index}].weightIn", weight)
 
-        # Create an aim matrix node
-        aimMatrixNode = cmds.createNode('aimMatrix', name='aimMatrix0%s' % (i+1))
-        cmds.connectAttr(pointMatrix, '%s.inputMatrix' % aimMatrixNode)
-        cmds.connectAttr(tangentMatrix, '%s.primaryTargetMatrix' % aimMatrixNode)
-        cmds.setAttr('%s.primaryMode' % aimMatrixNode, 1)
-        cmds.setAttr('%s.primaryInputAxis' % aimMatrixNode, 1, 0, 0)
-        cmds.setAttr('%s.secondaryInputAxis' % aimMatrixNode, 0, 1, 0)
-        cmds.setAttr('%s.secondaryMode' % aimMatrixNode, 0)
-        aimMatrixOutput = '%s.outputMatrix' % aimMatrixNode
+        aimMatrixNode = cmds.createNode("aimMatrix", name=f"aimMatrix0{i+1}")
+        cmds.connectAttr(pointMatrix, f"{aimMatrixNode}.inputMatrix")
+        cmds.connectAttr(tangentMatrix, f"{aimMatrixNode}.primaryTargetMatrix")
+        cmds.setAttr(f"{aimMatrixNode}.primaryMode", 1)
+        cmds.setAttr(f"{aimMatrixNode}.primaryInputAxis", 1, 0, 0)
+        cmds.setAttr(f"{aimMatrixNode}.secondaryInputAxis", 0, 1, 0)
+        cmds.setAttr(f"{aimMatrixNode}.secondaryMode", 0)
+        aimMatrixOutput = f"{aimMatrixNode}.outputMatrix"
 
-        # Remove scale
-        pickMatrixNode = cmds.createNode('pickMatrix', name='noScale0%s' % (i+1))
-        cmds.connectAttr(aimMatrixOutput, '%s.inputMatrix' % pickMatrixNode)
-        cmds.setAttr('%s.useScale' % pickMatrixNode, False)
-        cmds.setAttr('%s.useShear' % pickMatrixNode, False)
-        outputMatrix = '%s.outputMatrix' % pickMatrixNode
+        pickMatrixNode = cmds.createNode("pickMatrix", name=f"noScale0{i+1}")
+        cmds.connectAttr(aimMatrixOutput, f"{pickMatrixNode}.inputMatrix")
+        cmds.setAttr(f"{pickMatrixNode}.useScale", False)
+        cmds.setAttr(f"{pickMatrixNode}.useShear", False)
+        outputMatrix = f"{pickMatrixNode}.outputMatrix"
 
-        cmds.connectAttr(outputMatrix, '%s.offsetParentMatrix' % pNode)
-       
+        decomposeNode = cmds.createNode("decomposeMatrix", name=f"decomposeMatrix0{i+1}")
+        cmds.connectAttr(outputMatrix, f"{decomposeNode}.inputMatrix")
+
+        composeNode = cmds.createNode("composeMatrix", name=f"composeMatrix0{i+1}")
+        cmds.connectAttr(f"{decomposeNode}.outputTranslate", f"{composeNode}.inputTranslate")   
+        cmds.connectAttr(f"{decomposeNode}.outputRotate", f"{composeNode}.inputRotate")
+
+        composes.append(composeNode)
 
 
-print('Run the following commands to test the curve functions:')
+
+        cmds.connectAttr(f"{composeNode}.outputMatrix", f"{pNode}.offsetParentMatrix")
+
+        joints.append(pNode)
+
+    volume_preservation_setup(joints=joints, controllers=[blend_chain[0], ctl, blend_chain[1]], prefix="volPres_", composeNodes=composes)
+
+def volume_preservation_setup(joints, controllers, prefix='volPres_', composeNodes=[None]):
+
+    # Get controller world positions
+    ctrl_positions = [om.MVector(*cmds.xform(ctrl, q=True, ws=True, t=True)) for ctrl in controllers]
+
+    for i, jnt in enumerate(joints):
+        jnt_pos = om.MVector(*cmds.xform(jnt, q=True, ws=True, t=True))
+
+        # Calculate distances to controllers
+        dists = [(i, (jnt_pos - ctrl_positions[i]).length()) for i in range(3)]
+        dists.sort(key=lambda x: x[1])  # sort by distance
+
+        # Take 2 closest controllers
+        (i1, d1), (i2, d2) = dists[0], dists[1]
+
+        # Compute inverse-distance weights
+        inv1 = 1.0 / d1 if d1 > 1e-4 else 1e6
+        inv2 = 1.0 / d2 if d2 > 1e-4 else 1e6
+        total = inv1 + inv2
+        w1 = inv1 / total
+        w2 = inv2 / total
+
+        # Create output blend node
+        pma_node = cmds.createNode('plusMinusAverage', name=f"{prefix}{jnt}_pma")
+        cmds.setAttr(f"{pma_node}.operation", 1)  # sum
+
+        # Connect first closest controller
+        md1 = cmds.createNode('multiplyDivide', name=f"{prefix}{jnt}_md{i1}")
+        cmds.setAttr(f"{md1}.input2X", w1)
+        cmds.setAttr(f"{md1}.input2Y", w1)
+        cmds.setAttr(f"{md1}.input2Z", w1)
+        cmds.connectAttr(f"{controllers[i1]}.scale", f"{md1}.input1", force=True)
+        cmds.connectAttr(f"{md1}.output", f"{pma_node}.input3D[0]", force=True)
+
+        # Connect second closest controller
+        md2 = cmds.createNode('multiplyDivide', name=f"{prefix}{jnt}_md{i2}")
+        cmds.setAttr(f"{md2}.input2X", w2)
+        cmds.setAttr(f"{md2}.input2Y", w2)
+        cmds.setAttr(f"{md2}.input2Z", w2)
+        cmds.connectAttr(f"{controllers[i2]}.scale", f"{md2}.input1", force=True)
+        cmds.connectAttr(f"{md2}.output", f"{pma_node}.input3D[1]", force=True)
+
+        # Connect final blended scale to the joint
+        cmds.connectAttr(f"{pma_node}.output3D", f"{composeNodes[i]}.inputScale", force=True)
+
+
+
+print("Run the following commands to test the curve functions:")
 _testMatrixOnCurve()
-
