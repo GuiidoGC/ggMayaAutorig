@@ -3,22 +3,11 @@ import maya.cmds as cmds
 import json
 import os
 
+from gg_autorig.utils import core
+from importlib import reload
+reload(core)
 
 TEMPLATE_FILE = None
-
-def init_template_file(path=None):
-    """
-    Initializes the TEMPLATE_FILE variable.
-    If a path is provided, it sets TEMPLATE_FILE to that path.
-    Otherwise, it uses the default template file path.
-    """
-    global TEMPLATE_FILE
-    if path:
-        TEMPLATE_FILE = path
-    else:
-        complete_path = os.path.realpath(__file__)
-        relative_path = complete_path.split("\scripts")[0]
-        TEMPLATE_FILE = os.path.join(relative_path, "curves", "template_curves_001.json")
 
 def lock_attr(ctl, attrs = ["scaleX", "scaleY", "scaleZ", "visibility"], ro=True):
     """
@@ -37,12 +26,14 @@ def lock_attr(ctl, attrs = ["scaleX", "scaleY", "scaleZ", "visibility"], ro=True
         cmds.addAttr(ctl, longName="rotate_order", nn="Rotate Order", attributeType="enum", enumName="xyz:yzx:zxy:xzy:yxz:zyx", keyable=True)
         cmds.connectAttr(f"{ctl}.rotate_order", f"{ctl}.rotateOrder")
 
-def get_all_ctl_curves_data(prefix="CTL"):
+def get_all_ctl_curves_data(path = "",prefix="CTL"):
     """
     Collects data from all controller curves in the scene and saves it to a JSON file.
     This function retrieves information about each controller's transform and its associated nurbsCurve shapes,
     including their CV positions, form, knots, degree, and override attributes.
     """
+
+    TEMPLATE_FILE = core.init_template_file(ext=".ctls")
 
     ctl_data = {}
 
@@ -141,12 +132,14 @@ def get_all_ctl_curves_data(prefix="CTL"):
             "shapes": shape_data_list
         }
 
+    
+    
+
     with open(TEMPLATE_FILE, "w") as f:
         json.dump(ctl_data, f, indent=4)
 
-    print(f"Controllers template saved to: {TEMPLATE_FILE}")
 
-def build_curves_from_template(target_transform_name=None):
+def build_curves_from_template(target_transform_name=None, path=None):
     """
     Builds controller curves from a predefined template JSON file.
     If a specific target transform name is provided, it filters the curves to only create those associated with that transform.
@@ -157,15 +150,15 @@ def build_curves_from_template(target_transform_name=None):
         list: A list of created transform names.
     """
 
-    if not os.path.exists(TEMPLATE_FILE):
+    if not os.path.exists(path):
         om.MGlobal.displayError("Template file does not exist.")
         return
 
-    with open(TEMPLATE_FILE, "r") as f:
+    with open(path, "r") as f:
         ctl_data = json.load(f)
 
     if target_transform_name:
-        ctl_data = {k: v for k, v in ctl_data.items() if v["transform"]["name"] == target_transform_name}
+        ctl_data = {k: v for k, v in ctl_data.items() if "transform" in v and v["transform"].get("name") == target_transform_name}
         if not ctl_data:
             return
 
@@ -253,6 +246,9 @@ def controller_creator(name, suffixes=["GRP", "ANM"], mirror=False, parent=None,
         name (str): Name of the controller.
         suffixes (list): List of suffixes for the groups to be created. Default is ["GRP"].
     """
+
+    TEMPLATE_FILE = core.init_template_file(ext=".ctls", export=False)
+
     created_grps = []
     if suffixes:
         for suffix in suffixes:
@@ -272,7 +268,7 @@ def controller_creator(name, suffixes=["GRP", "ANM"], mirror=False, parent=None,
             cmds.delete(created_grps[0])
         return
     else:
-        ctl = build_curves_from_template(f"{name}_{prefix}")
+        ctl = build_curves_from_template(f"{name}_{prefix}", path = TEMPLATE_FILE)
 
         if not ctl:
             ctl = cmds.circle(name=f"{name}_{prefix}", ch=False)

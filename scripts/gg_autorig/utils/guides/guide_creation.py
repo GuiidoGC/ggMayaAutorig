@@ -3,9 +3,15 @@ import gg_autorig.utils.curve_tool as curve_tool
 from gg_autorig.utils.curve_tool import controller_creator   
 from gg_autorig.utils.curve_tool import init_template_file  
 from importlib import reload
+import json
+
+from gg_autorig.utils import core
+reload(core)
+
+
+
 reload(curve_tool)
 
-init_template_file("D:/git/maya/biped_autorig/curves/guides_curves_template.json")
 class GuideCreation(object):
     """
     Base class to create guides in the Maya scene.
@@ -92,6 +98,23 @@ class GuideCreation(object):
                 cmds.connectAttr(self.guides[2 + value] + ".worldMatrix[0]", aimMatrix + ".primaryTargetMatrix")
                 cmds.connectAttr(self.guides[3 + value] + ".worldMatrix[0]", aimMatrix + ".secondaryTargetMatrix")
 
+def get_data(name):
+
+    final_path = core.init_template_file(ext=".guides", export=False)
+
+    with open(final_path, "r") as infile:
+                guides_data = json.load(infile)
+
+    # Example: get world position and rotation for "wrist"
+    for template_name, guides in guides_data.items():
+        for guide_name, guide_info in guides.items():
+            if name in guide_name:
+                world_position = guide_info.get("worldPosition")
+                # world_rotation = guide_info.get("worldRotation")
+                return world_position #world_rotation
+    return None, None
+
+
 
 class ArmGuideCreation(GuideCreation):
     """
@@ -102,10 +125,10 @@ class ArmGuideCreation(GuideCreation):
     aim_name = "shoulder"
     aim_offset = 0
     position_data = {
-        "clavicle": [1, 50, 1],
-        "shoulder": [5, 50, 0],
-        "elbow": [13, 43, 0],
-        "wrist": [19, 38, 0],
+        "clavicle": get_data("clavicle"),
+        "shoulder": get_data("shoulder"),
+        "elbow": get_data("elbow"),
+        "wrist": get_data("wrist"),
     }
 
 
@@ -120,11 +143,11 @@ class LegGuideCreation(GuideCreation):
     aim_name = "hip"
     aim_offset = -1
     position_data = {
-        "hip": [3, 32, 0],
-        "knee": [3, 17, 0],
-        "ankle": [3, 3, -2],
-        "ball": [3, 1, 3],
-        "tip": [3, 1, 5],
+        "hip": get_data("hip"),
+        "knee": get_data("knee"),
+        "ankle": get_data("ankle"),
+        "ball": get_data("ball"),
+        "tip": get_data("tip"),
     }
 
 
@@ -136,8 +159,8 @@ class SpineGuideCreation(GuideCreation):
     limb_name = "spine"
     aim_name = None
     position_data = {
-        "spine01": [0, 33, 0],
-        "spine02": [0, 44, 0],
+        "spine01": get_data("spine01"),
+        "spine02": get_data("spine02"),
     }
 
 
@@ -149,8 +172,8 @@ class NeckGuideCreation(GuideCreation):
     limb_name = "neck"
     aim_name = None
     position_data = {
-        "neck": [0, 51, 0],
-        "head": [0, 57, 0],
+        "neck": get_data("neck"),
+        "head": get_data("head"),
     }
 
 
@@ -163,29 +186,30 @@ class HandGuideCreation(GuideCreation):
     aim_name = None
     aim_offset = 0
     position_data = {
-        "index01": [20.78, 35.76, 1.69],
-        "index02": [21.74, 34.74, 1.75],
-        "index03": [22.25, 34.25, 1.79],
-        "indexEnd": [22.81, 33.62, 1.82],
-        "metacarpalMiddle": [19.27, 37.51, 0.75],
-        "middle01": [20.91, 35.77, 0.76],
-        "middle02": [21.9, 34.71, 0.76],
-        "middle03": [22.51, 34.13, 0.76],
-        "middleEnd": [23.29, 33.33, 0.76],
-        "metacarpalRing": [19.22, 37.48, -0.21],
-        "ring01": [20.82, 35.79, -0.22],
-        "ring02": [21.73, 34.83, -0.23],
-        "ring03": [22.33, 34.2, -0.24],
-        "ringEnd": [23.02, 33.46, -0.24],
-        "metacarpalPinky": [19.08, 37.32, -0.9],
-        "pinky01": [20.59, 35.82, -1.01],
-        "pinky02": [21.4, 34.89, -1.06],
-        "pinky03": [21.83, 34.43, -1.09],
-        "pinkyEnd": [22.47, 33.86, -1.14],
-        "metacarpalThumb": [19.2, 37.42, 1.59],
-        "thumb01": [18.56, 36.45, 2.1],
-        "thumb02": [19.03, 35.45, 2.7],
-        "thumbEnd": [19.52, 34.41, 3.31],
+        "metacarpalIndex": get_data("metacarpalIndex"),
+        "index01": get_data("index01"),
+        "index02": get_data("index02"),
+        "index03": get_data("index03"),
+        "indexEnd": get_data("indexEnd"),
+        "metacarpalMiddle": get_data("metacarpalMiddle"),
+        "middle01": get_data("middle01"),
+        "middle02": get_data("middle02"),
+        "middle03": get_data("middle03"),
+        "middleEnd": get_data("middleEnd"),
+        "metacarpalRing": get_data("metacarpalRing"),
+        "ring01": get_data("ring01"),
+        "ring02": get_data("ring02"),
+        "ring03": get_data("ring03"),
+        "ringEnd": get_data("ringEnd"),
+        "metacarpalPinky": get_data("metacarpalPinky"),
+        "pinky01": get_data("pinky01"),
+        "pinky02": get_data("pinky02"),
+        "pinky03": get_data("pinky03"),
+        "pinkyEnd": get_data("pinkyEnd"),
+        "metacarpalThumb": get_data("metacarpalThumb"),
+        "thumb01": get_data("thumb01"),
+        "thumb02": get_data("thumb02"),
+        "thumbEnd": get_data("thumbEnd"),
     }
 
 
@@ -198,20 +222,26 @@ class FootGuideCreation(GuideCreation):
     aim_name = None
     aim_offset = 0
     position_data = {
-        "L_bankOut": [6, 0, 2],
-        "L_bankIn": [1, 0, 2],
-        "L_heel": [3, 0, -4],
+        "bankOut": get_data("bankOut"),
+        "bankIn": get_data("bankIn"),
+        "heel": get_data("heel"),
     }
 
 
+def rebuild_guides():
+    """
+    Rebuilds the guides in the Maya scene.
+    This function creates a new guides group and populates it with guides for arms, legs, spine, neck, hands, and feet.
+    """
 
-guides_trn = cmds.createNode("transform", name="guides_GRP", ss=True)
-buffers_trn = cmds.createNode("transform", name="buffers_GRP", ss=True, parent=guides_trn)
+
+    guides_trn = cmds.createNode("transform", name="guides_GRP", ss=True)
+    buffers_trn = cmds.createNode("transform", name="buffers_GRP", ss=True, parent=guides_trn)
 
 
-ArmGuideCreation().create_guides(guides_trn, buffers_trn)
-LegGuideCreation().create_guides(guides_trn, buffers_trn)
-SpineGuideCreation().create_guides(guides_trn, buffers_trn)
-NeckGuideCreation().create_guides(guides_trn, buffers_trn)
-HandGuideCreation().create_guides(guides_trn, buffers_trn)
-FootGuideCreation().create_guides(guides_trn, buffers_trn)
+    ArmGuideCreation().create_guides(guides_trn, buffers_trn)
+    LegGuideCreation().create_guides(guides_trn, buffers_trn)
+    SpineGuideCreation().create_guides(guides_trn, buffers_trn)
+    NeckGuideCreation().create_guides(guides_trn, buffers_trn)
+    HandGuideCreation().create_guides(guides_trn, buffers_trn)
+    FootGuideCreation().create_guides(guides_trn, buffers_trn)
