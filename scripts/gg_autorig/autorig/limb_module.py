@@ -34,6 +34,8 @@ class LimbModule(object):
         self.guides_grp = data_exporter.get_data("basic_structure", "guides_GRP")
 
         self.individual_module_grp = cmds.createNode("transform", name=f"{self.side}_{self.module_name}Module_GRP", parent=self.modules_grp, ss=True)
+        self.individual_controllers_grp = cmds.createNode("transform", name=f"{self.side}_{self.module_name}Controllers_GRP", parent=self.masterWalk_ctl, ss=True)
+        self.skinnging_grp = cmds.createNode("transform", name=f"{self.side}_{self.module_name}SkinningJoints_GRP", parent=self.skel_grp, ss=True)
 
     
 
@@ -57,7 +59,6 @@ class LimbModule(object):
 
             cmds.setAttr(aim_matrix + ".primaryInputAxis", 1, 0, 0, type="double3")
             cmds.setAttr(aim_matrix + ".secondaryInputAxis", 0, 0, 1, type="double3")
-            cmds.setAttr(aim_matrix + ".secondaryTargetVector", 0, 0, 1, type="double3")
             
             cmds.setAttr(aim_matrix + ".primaryMode", 1)
             cmds.setAttr(aim_matrix + ".secondaryMode", 1)
@@ -85,8 +86,8 @@ class LimbModule(object):
         Create FK chain for the limb.
         This function creates a forward kinematics chain for the limb, including controllers and constraints.
         """
-        fk_ctls = []
-        fk_grps = []
+        self.fk_ctls = []
+        self.fk_grps = []
         self.fk_joints = []
         for i, guide in enumerate(self.guides_matrix):
 
@@ -105,11 +106,15 @@ class LimbModule(object):
             cmds.connectAttr(f"{ctl}.worldMatrix[0]", f"{joint}.offsetParentMatrix")
 
             cmds.connectAttr(f"{guide}.outputMatrix", f"{ctl_grp[0]}.offsetParentMatrix")
-            cmds.parent(ctl_grp[0], fk_ctls[-1] if fk_ctls else self.masterWalk_ctl)
+            cmds.parent(ctl_grp[0], self.fk_ctls[-1] if self.fk_ctls else self.individual_controllers_grp)
 
-            fk_ctls.append(ctl)
-            fk_grps.append(ctl_grp) 
+            self.fk_ctls.append(ctl)
+            self.fk_grps.append(ctl_grp) 
             self.fk_joints.append(joint)
+
+        cmds.addAttr(self.fk_ctls[0], shortName="extraAttr", niceName="Extra Attributes  ———", enumName="_____",attributeType="enum", keyable=True)
+        cmds.setAttr(self.fk_ctls[0]+".extraAttr", channelBox=True, lock=True)
+        cmds.addAttr(self.fk_ctls[0], shortName="upperTwist", niceName="Upper Twist",defaultValue=0, keyable=True)
 
         self.ik_rig()
 
@@ -118,34 +123,33 @@ class LimbModule(object):
         Given three matrix attributes (e.g. joint.worldMatrix[0]), compute a proper pole vector
         position using Maya matrix and math nodes (no Python vector math).
         """
-
         def matrix_to_translation(matrix_attr, prefix):
-            mm = cmds.createNode('multMatrix', name=f'{prefix}_multMatrix')
-            dm = cmds.createNode('decomposeMatrix', name=f'{prefix}_decomposeMatrix')
+            mm = cmds.createNode('multMatrix', name=f"{self.side}_{self.module_name}PV_MMX", ss=True)
+            dm = cmds.createNode('decomposeMatrix', name=f"{self.side}_{self.module_name}PV_DCM", ss=True)
             cmds.connectAttr(matrix_attr, f'{mm}.matrixIn[0]')
             cmds.setAttr(f'{mm}.matrixIn[1]', [1, 0, 0, 0,
-                                            0, 1, 0, 0,
-                                            0, 0, 1, 0,
-                                            0, 0, 0, 1], type='matrix')
+                    0, 1, 0, 0,
+                    0, 0, 1, 0,
+                    0, 0, 0, 1], type='matrix')
             cmds.connectAttr(f'{mm}.matrixSum', f'{dm}.inputMatrix')
             return dm, f'{dm}.outputTranslate'
 
         def create_vector_subtract(name, inputA, inputB):
-            node = cmds.createNode('plusMinusAverage', name=name)
+            node = cmds.createNode('plusMinusAverage', name=f"{self.side}_{self.module_name}PV_PMA", ss=True)
             cmds.setAttr(f'{node}.operation', 2)
             cmds.connectAttr(inputA, f'{node}.input3D[0]')
             cmds.connectAttr(inputB, f'{node}.input3D[1]')
             return node, f'{node}.output3D'
 
         def normalize_vector(input_vec, name):
-            vp = cmds.createNode('vectorProduct', name=name)
+            vp = cmds.createNode('vectorProduct', name=f"{self.side}_{self.module_name}PV_VCP", ss=True)
             cmds.setAttr(f'{vp}.operation', 0)
             cmds.setAttr(f'{vp}.normalizeOutput', 1)
             cmds.connectAttr(input_vec, f'{vp}.input1')
             return vp, f'{vp}.output'
 
         def scale_vector(input_vec, scalar_attr, name):
-            md = cmds.createNode('multiplyDivide', name=name)
+            md = cmds.createNode('multiplyDivide', name=f"{self.side}_{self.module_name}PV_MDV", ss=True)
             cmds.setAttr(f'{md}.operation', 1)
             cmds.connectAttr(input_vec, f'{md}.input1')
             for axis in 'XYZ':
@@ -153,7 +157,7 @@ class LimbModule(object):
             return md, f'{md}.output'
 
         def add_vectors(vecA, vecB, name):
-            node = cmds.createNode('plusMinusAverage', name=name)
+            node = cmds.createNode('plusMinusAverage', name=f"{self.side}_{self.module_name}PV_PMA", ss=True)
             cmds.connectAttr(vecA, f'{node}.input3D[0]')
             cmds.connectAttr(vecB, f'{node}.input3D[1]')
             return node, f'{node}.output3D'
@@ -162,19 +166,19 @@ class LimbModule(object):
         dm2, vec2_attr = matrix_to_translation(m2_attr, 'vec2')
         dm3, vec3_attr = matrix_to_translation(m3_attr, 'vec3')
 
-        dist1 = cmds.createNode('distanceBetween', name='dist1')
+        dist1 = cmds.createNode('distanceBetween', name=f"{self.side}_{self.module_name}PV_DBT", ss=True)
         cmds.connectAttr(vec1_attr, f'{dist1}.point1')
         cmds.connectAttr(vec2_attr, f'{dist1}.point2')
 
-        dist2 = cmds.createNode('distanceBetween', name='dist2')
+        dist2 = cmds.createNode('distanceBetween', name=f"{self.side}_{self.module_name}PV_DBT", ss=True)
         cmds.connectAttr(vec2_attr, f'{dist2}.point1')
         cmds.connectAttr(vec3_attr, f'{dist2}.point2')
 
-        avg = cmds.createNode('plusMinusAverage', name='avgDist')
+        avg = cmds.createNode('plusMinusAverage', name=f"{self.side}_{self.module_name}PV_PMA", ss=True)
         cmds.connectAttr(f'{dist1}.distance', f'{avg}.input1D[0]')
         cmds.connectAttr(f'{dist2}.distance', f'{avg}.input1D[1]')
 
-        half = cmds.createNode('multiplyDivide', name='halfDist')
+        half = cmds.createNode('multiplyDivide', name=f"{self.side}_{self.module_name}PV_MDV", ss=True)
         cmds.setAttr(f'{half}.operation', 2)
         cmds.setAttr(f'{half}.input2X', 2.0 / pole_distance)
         cmds.connectAttr(f'{avg}.output1D', f'{half}.input1X')
@@ -197,7 +201,7 @@ class LimbModule(object):
 
         vec_to_project_node, vec_to_project = create_vector_subtract('vec_to_project', vec2_attr, vec1_final)
 
-        dot_node = cmds.createNode('vectorProduct', name='projection_dot')
+        dot_node = cmds.createNode('vectorProduct', name=f"{self.side}_{self.module_name}PV_VCP", ss=True)
         cmds.setAttr(f'{dot_node}.operation', 1)
         cmds.connectAttr(vec_to_project, f'{dot_node}.input1')
         cmds.connectAttr(proj_dir_norm, f'{dot_node}.input2')
@@ -213,7 +217,7 @@ class LimbModule(object):
 
         pole_pos_node, pole_pos = add_vectors(vec2_attr, pointer_scaled, 'poleVectorPos')
 
-        compose_node = cmds.createNode('composeMatrix', name="poleVector_compose")
+        compose_node = cmds.createNode('composeMatrix', name=f"{self.side}_{self.module_name}PV_CMT", ss=True)
         cmds.connectAttr(pole_pos, f'{compose_node}.inputTranslate')
 
         return f'{compose_node}.outputMatrix'
@@ -223,7 +227,7 @@ class LimbModule(object):
         Create IK chain for the limb.
         This function creates an inverse kinematics chain for the limb, including controllers and constraints.
         """
-        self.ik_controllers = cmds.createNode("transform", name=f"{self.side}_{self.module_name}IkControllers_GRP", parent=self.masterWalk_ctl, ss=True)
+        self.ik_controllers = cmds.createNode("transform", name=f"{self.side}_{self.module_name}IkControllers_GRP", parent=self.individual_controllers_grp, ss=True)
 
         root_ik_ctl, root_ik_ctl_grp = controller_creator(
             name=f"{self.side}_RootIk",
@@ -242,7 +246,7 @@ class LimbModule(object):
             parent=self.ik_controllers
 
         )
-        hand_ik_ctl, hand_ik_ctl_grp = controller_creator(
+        self.hand_ik_ctl, self.hand_ik_ctl_grp = controller_creator(
             name=f"{self.side}_HandIk",
             suffixes=["GRP", "ANM"],
             mirror=self.mirror,
@@ -252,8 +256,28 @@ class LimbModule(object):
 
         )
 
+        cmds.addAttr(self.hand_ik_ctl, shortName="extraAttr", niceName="Extra Attributes  ———", enumName="_____",attributeType="enum", keyable=True)
+        cmds.setAttr(self.hand_ik_ctl+".extraAttr", channelBox=True, lock=True)
+        cmds.addAttr(self.hand_ik_ctl, shortName="upperTwist", niceName="Upper Twist",defaultValue=0, keyable=True)
+
+        cmds.addAttr(self.hand_ik_ctl, shortName="ikControls", niceName="IK Controls  ———", enumName="_____",attributeType="enum", keyable=True)
+        cmds.addAttr(self.hand_ik_ctl, shortName="curvature", niceName="Curvature", maxValue=1, minValue=0,defaultValue=0, keyable=True)
+        cmds.setAttr(self.hand_ik_ctl+".ikControls", channelBox=True, lock=True)
+        cmds.addAttr(self.hand_ik_ctl, shortName="soft", niceName="Soft",minValue=0,maxValue=1,defaultValue=0, keyable=True)
+        cmds.addAttr(self.hand_ik_ctl, shortName="twist", niceName="Twist",minValue=-180,defaultValue=0, maxValue=180, keyable=True)
+
+
+        cmds.addAttr(self.hand_ik_ctl, shortName="strechySep", niceName="Strechy  ———", enumName="_____",attributeType="enum", keyable=True)
+        cmds.setAttr(self.hand_ik_ctl+".strechySep", channelBox=True, lock=True)
+        cmds.addAttr(self.hand_ik_ctl, shortName="upperLengthMult", niceName="Upper Length Mult",minValue=0.001,defaultValue=1, keyable=True)
+        cmds.addAttr(self.hand_ik_ctl, shortName="lowerLengthMult", niceName="Lower Length Mult",minValue=0.001,defaultValue=1, keyable=True)
+        cmds.addAttr(self.hand_ik_ctl, shortName="stretch", niceName="Stretch",minValue=0,maxValue=1,defaultValue=0, keyable=True)
+
+        
+        
+
         cmds.connectAttr(f"{self.guides_matrix[0]}.outputMatrix", f"{root_ik_ctl_grp[0]}.offsetParentMatrix")
-        cmds.connectAttr(f"{self.guides_matrix[2]}.outputMatrix", f"{hand_ik_ctl_grp[0]}.offsetParentMatrix")
+        cmds.connectAttr(f"{self.guides_matrix[2]}.outputMatrix", f"{self.hand_ik_ctl_grp[0]}.offsetParentMatrix")
 
         pv_pos = self.create_matrix_pole_vector(
             f"{self.guides_matrix[0]}.outputMatrix",
@@ -264,7 +288,7 @@ class LimbModule(object):
 
         cmds.connectAttr(pv_pos, f"{pv_ik_ctl_grp[0]}.offsetParentMatrix")
 
-
+        cmds.select(clear=True)
         self.ik_chain = [cmds.joint(name=self.guides[0].replace("_GUIDE", "Ik_JNT"), rad=0.5)]
         cmds.parent(self.ik_chain[0], self.individual_module_grp)
 
@@ -273,6 +297,8 @@ class LimbModule(object):
             joint = cmds.joint(name=self.guides[i+1].replace("_GUIDE", "Ik_JNT"), rad=0.5)
             cmds.parent(joint, self.ik_chain[-1])
             self.ik_chain.append(joint)
+
+            cmds.setAttr(f"{joint}.preferredAngle", 0, -1, 0, type="double3")
 
             distance_between = cmds.createNode("distanceBetween", name=f"{self.side}_{self.module_name}IkDistance0{i+1}_DB")
             cmds.connectAttr(f"{self.guides_matrix[i]}.outputMatrix", f"{distance_between}.inMatrix1")
@@ -288,6 +314,8 @@ class LimbModule(object):
             solver="ikRPsolver",
         )
         cmds.parent(ik_rps[0], self.individual_module_grp)
+        cmds.connectAttr(f"{self.hand_ik_ctl}.twist", f"{ik_rps[0]}.twist")
+
 
         float_constant = cmds.createNode("floatConstant", name=f"{self.side}_{self.module_name}IkFloatConstant")
         cmds.setAttr(f"{float_constant}.inFloat", 0)
@@ -295,9 +323,15 @@ class LimbModule(object):
         cmds.connectAttr(f"{float_constant}.outFloat", f"{ik_rps[0]}.ty")
         cmds.connectAttr(f"{float_constant}.outFloat", f"{ik_rps[0]}.tz")
 
-        cmds.connectAttr(f"{hand_ik_ctl}.worldMatrix[0]", f"{ik_rps[0]}.offsetParentMatrix")
+        cmds.connectAttr(f"{self.hand_ik_ctl}.worldMatrix[0]", f"{ik_rps[0]}.offsetParentMatrix")
 
-        cmds.poleVectorConstraint(pv_ik_ctl, ik_rps[0])
+        cmds.poleVectorConstraint(pv_ik_ctl, ik_rps[0]) 
+
+        decompose_matrix = cmds.createNode("decomposeMatrix", name=f"{self.side}_{self.module_name}Ik_DPM", ss=True)
+        cmds.connectAttr(f"{self.hand_ik_ctl}.matrix", f"{decompose_matrix}.inputMatrix")
+
+        cmds.connectAttr(f"{decompose_matrix}.outputScale", f"{self.ik_chain[-1]}.scale")
+        cmds.connectAttr(f"{decompose_matrix}.outputRotate", f"{self.ik_chain[-1]}.rotate")
 
         """
         
@@ -312,29 +346,85 @@ class LimbModule(object):
 
         """
 
-
+        self.pairblends()
 
     def pairblends(self):
         """
         Create pair blends for the limb.
         This function sets up pair blends to switch between FK and IK controllers.
         """
-        self.pair_blends = []
+
+
+
+        self.switch_pos = guide_import(f"{self.side}_{self.module_name}Settings_GUIDE", all_descendents=False)[0]
+
+        self.switch_ctl, self.switch_ctl_grp = controller_creator(
+            name=f"{self.side}_{self.module_name}Switch",
+            suffixes=["GRP"],
+            lock=["tx","ty","tz","rx","ry","rz","sx", "sy", "sz", "visibility"],
+            ro=False,
+            match=self.switch_pos,
+            parent=self.individual_controllers_grp
+        )
+
+        cmds.delete(self.switch_pos)
+
+        cmds.addAttr(self.switch_ctl, shortName="switchIkFk", niceName="Switch IK --> FK", maxValue=1, minValue=0,defaultValue=0, keyable=True)
+        cmds.connectAttr(f"{self.switch_ctl}.switchIkFk", f"{self.fk_grps[0][0]}.visibility", force=True)
+        rev = cmds.createNode("reverse", name=f"{self.side}_{self.module_name}FkVisibility_REV", ss=True)
+        cmds.connectAttr(f"{self.switch_ctl}.switchIkFk", f"{rev}.inputX")
+        cmds.connectAttr(f"{rev}.outputX", f"{self.ik_controllers}.visibility")
+
+        blend_two_attrs = cmds.createNode("blendTwoAttr", name=f"{self.side}_{self.module_name}IkFkBlend_BTA", ss=True)
+        print(blend_two_attrs)
+        cmds.connectAttr(f"{self.switch_ctl}.switchIkFk", f"{blend_two_attrs}.attributesBlender")
+        cmds.connectAttr(f"{self.fk_ctls[0]}.upperTwist", f"{blend_two_attrs}.input[1]")
+        cmds.connectAttr(f"{self.hand_ik_ctl}.upperTwist", f"{blend_two_attrs}.input[0]")
+
+
+        self.blend_chain = []
         for i, fk_joint in enumerate(self.fk_joints):
-            ik_joint = cmds.ls(fk_joint.replace("Fk", "Ik"), type="joint")[0]
-            pair_blend = cmds.createNode("pairBlend", name=f"{self.side}_{self.module_name}PairBlend0{i+1}", ss=True)
-            cmds.connectAttr(f"{fk_joint}.worldMatrix[0]", f"{pair_blend}.inMatrix1")
-            cmds.connectAttr(f"{ik_joint}.worldMatrix[0]", f"{pair_blend}.inMatrix2")
-            cmds.connectAttr(f"{pair_blend}.outMatrix", f"{fk_joint}.offsetParentMatrix")
-            self.pair_blends.append(pair_blend)
+            cmds.select(clear=True)
+            joint = cmds.joint(name=self.guides[i].replace("_GUIDE", "Blend_JNT"), rad=0.5)
+            blendMatrix = cmds.createNode("blendMatrix", name=f"{self.side}_{self.module_name}0{i+1}_BLM", ss=True)
+            cmds.connectAttr(f"{self.ik_chain[i]}.worldMatrix[0]", f"{blendMatrix}.inputMatrix")
+            cmds.connectAttr(f"{fk_joint}.worldMatrix[0]", f"{blendMatrix}.target[0].targetMatrix")
+            cmds.connectAttr(f"{self.switch_ctl}.switchIkFk", f"{blendMatrix}.target[0].weight")
+            
+            if i == 0:
+                decomposeMatrix = cmds.createNode("decomposeMatrix", name=f"{self.side}_{self.module_name}NonRoll0{i+1}_DCM", ss=True)
+                composeMatrix = cmds.createNode("composeMatrix", name=f"{self.side}_{self.module_name}NonRoll0{i+1}_CMT", ss=True)
+
+                cmds.connectAttr(f"{blendMatrix}.outputMatrix", f"{decomposeMatrix}.inputMatrix")
+                cmds.connectAttr(f"{decomposeMatrix}.outputQuat", f"{composeMatrix}.inputQuat")
+                cmds.connectAttr(f"{decomposeMatrix}.outputRotateY", f"{composeMatrix}.inputRotateY")
+                cmds.connectAttr(f"{decomposeMatrix}.outputRotateZ", f"{composeMatrix}.inputRotateZ")
+                cmds.connectAttr(f"{blend_two_attrs}.output", f"{composeMatrix}.inputRotateX")
+                cmds.connectAttr(f"{decomposeMatrix}.outputScale", f"{composeMatrix}.inputScale")
+                cmds.connectAttr(f"{decomposeMatrix}.outputShear", f"{composeMatrix}.inputShear")
+                cmds.connectAttr(f"{decomposeMatrix}.outputTranslate", f"{composeMatrix}.inputTranslate")
+
+                cmds.connectAttr(f"{composeMatrix}.outputMatrix", f"{joint}.offsetParentMatrix")
+
+            
+            
+            else:
+                cmds.connectAttr(f"{blendMatrix}.outputMatrix", f"{joint}.offsetParentMatrix")
+
+            cmds.parent(joint, self.individual_module_grp)
+            
+            
+            self.blend_chain.append(joint)
+
+        self.bendy_twist(blend_chain=[self.blend_chain[0], self.blend_chain[1]], suffix=f"{self.side}_upper{self.module_name.capitalize()}Bendy")
+        self.bendy_twist(blend_chain=[self.blend_chain[1], self.blend_chain[2]], suffix=f"{self.side}_lower{self.module_name.capitalize()}Bendy")
 
 
+    def bendy_twist(self, twist_number=5, degree=2, blend_chain=["L_shoulderDr_JNT", "L_elbowDr_JNT"], suffix=f"L_upperArm"):
 
-    def bendy_twist(self, pCount=5, degree=2, blend_chain=["L_shoulderDr_JNT", "L_elbowDr_JNT"], suffix="L_upperArm"):
+        ctl, ctl_grp = controller_creator(suffix, suffixes=["GRP", "ANM"], lock=["v"], parent=self.individual_controllers_grp, ro=True)
 
-        ctl, ctl_grp = controller_creator(suffix, suffixes=["GRP", "ANM"], lock=["v"])
-
-        blend_matrix = cmds.createNode("blendMatrix", name=f"{suffix}_blendMatrix")
+        blend_matrix = cmds.createNode("blendMatrix", name=f"{suffix}_BLM", ss=True)
         cmds.connectAttr(f"{blend_chain[0]}.worldMatrix[0]", f"{blend_matrix}.inputMatrix")
         cmds.connectAttr(f"{blend_chain[1]}.worldMatrix[0]", f"{blend_matrix}.target[0].targetMatrix")
         cmds.setAttr(f"{blend_matrix}.target[0].weight", 0.5)
@@ -349,51 +439,54 @@ class LimbModule(object):
 
         joints = []
 
-        for i in range(pCount):
-            t = i / (float(pCount) - 1)
+        for i in range(twist_number):
+            t = 0.95 if i == twist_number - 1 else i / (float(twist_number) - 1)
             cmds.select(clear=True)
-            pNode = cmds.joint(name=f"pJoint{i}")
-            cube = cmds.polyCube(name=f"pJoint{i}_cube", width=1, height=1, depth=1)[0]   
-            cmds.parent(cube, pNode)
+            joint = cmds.joint(name=f"{suffix}0{i+1}_JNT", rad=0.5)
+            cmds.parent(joint, self.skinnging_grp)
 
-            if i == pCount - 1:
-                weights = [0.0] * len(cvMatrices)
-                weights[-1] = 0.95
-                if len(cvMatrices) > 1:
-                    weights[-2] = 0.05
-                pointMatrixWeights = [[cvMatrices[j], weights[j]] for j in range(len(cvMatrices))]
-            else:
-                pointMatrixWeights = de_boors.pointOnCurveWeights(cvMatrices, t, degree=degree)
 
-            pma_node = cmds.createNode('plusMinusAverage', name=f"plusMinusAverage0{i+1}")
+            pointMatrixWeights = de_boors.pointOnCurveWeights(cvMatrices, t, degree=degree)
+
+            pma_node = cmds.createNode('plusMinusAverage', name=f"{suffix}0{i+1}_PMA", ss=True)
             cmds.setAttr(f"{pma_node}.operation", 1)
-        
-            pointMatrixNode = cmds.createNode("wtAddMatrix", name=f"pointMatrix0{i+1}")
-            pointMatrix = f"{pointMatrixNode}.matrixSum"
-            for index, (matrix, weight) in enumerate(pointMatrixWeights):
-                cmds.connectAttr(matrix, f"{pointMatrixNode}.wtMatrix[{index}].matrixIn")
-                float_constant = cmds.createNode("floatConstant", name=f"floatConstant{index}")
-                cmds.setAttr(f"{float_constant}.inFloat", weight)
-                cmds.connectAttr(f"{float_constant}.outFloat", f"{pointMatrixNode}.wtMatrix[{index}].weightIn", force=True)
 
-                md = cmds.createNode('multiplyDivide', name=f"multiplyDivide{index}")
+            cube = cmds.polyCube(name=f"pJoint{i}_cube", width=1, height=1, depth=1)[0]   
+            cmds.parent(cube, joint)
+        
+            pointMatrixNode = cmds.createNode("wtAddMatrix", name=f"{suffix}0{i+1}_PMX", ss=True)
+            pointMatrix = f"{pointMatrixNode}.matrixSum"
+
+            # Scale preservation
+            for index, (matrix, weight) in enumerate(pointMatrixWeights):
+                md = cmds.createNode('multiplyDivide', name=f"{suffix}0{i+1}_MDV", ss=True)
                 cmds.setAttr(f"{md}.input2X", weight)
                 cmds.setAttr(f"{md}.input2Y", weight)
                 cmds.setAttr(f"{md}.input2Z", weight)
-                parent = matrix.replace(".worldMatrix[0]", ".scale")
-                cmds.connectAttr(f"{parent}", f"{md}.input1", force=True)
+                decomposeNode = cmds.createNode("decomposeMatrix", name=f"{suffix}Scale0{i+1}_DCM", ss=True)
+                cmds.connectAttr(f"{matrix}", f"{decomposeNode}.inputMatrix", force=True)
+                cmds.connectAttr(f"{decomposeNode}.outputScale", f"{md}.input1", force=True)               
+
                 cmds.connectAttr(f"{md}.output", f"{pma_node}.input3D[{index}]", force=True)
+
+            # Joint positioning
+            for index, (matrix, weight) in enumerate(pointMatrixWeights):
+                cmds.connectAttr(matrix, f"{pointMatrixNode}.wtMatrix[{index}].matrixIn")
+                float_constant = cmds.createNode("floatConstant", name=f"{suffix}Point0{i+1}_FLM", ss=True)
+                cmds.setAttr(f"{float_constant}.inFloat", weight)
+                cmds.connectAttr(f"{float_constant}.outFloat", f"{pointMatrixNode}.wtMatrix[{index}].weightIn", force=True)
             
+            # Joint Tangent Matrix
             tangentMatrixWeights = de_boors.tangentOnCurveWeights(cvMatrices, t, degree=degree)
-            tangentMatrixNode = cmds.createNode("wtAddMatrix", name=f"tangentMatrix0{i+1}")
+            tangentMatrixNode = cmds.createNode("wtAddMatrix", name=f"{suffix}Tangent0{i+1}_WTADD", ss=True)
             tangentMatrix = f"{tangentMatrixNode}.matrixSum"
             for index, (matrix, weight) in enumerate(tangentMatrixWeights):
                 cmds.connectAttr(matrix, f"{tangentMatrixNode}.wtMatrix[{index}].matrixIn")
-                float_constant = cmds.createNode("floatConstant", name=f"floatConstant{index}")
+                float_constant = cmds.createNode("floatConstant", name=f"{suffix}Tangent0{i+1}_FLM", ss=True)
                 cmds.setAttr(f"{float_constant}.inFloat", weight)
                 cmds.connectAttr(f"{float_constant}.outFloat", f"{tangentMatrixNode}.wtMatrix[{index}].weightIn", force=True)
 
-            aimMatrixNode = cmds.createNode("aimMatrix", name=f"aimMatrix0{i+1}")
+            aimMatrixNode = cmds.createNode("aimMatrix", name=f"{suffix}0{i+1}_AMX", ss=True)
             cmds.connectAttr(pointMatrix, f"{aimMatrixNode}.inputMatrix")
             cmds.connectAttr(tangentMatrix, f"{aimMatrixNode}.primaryTargetMatrix")
             cmds.setAttr(f"{aimMatrixNode}.primaryMode", 1)
@@ -402,16 +495,16 @@ class LimbModule(object):
             cmds.setAttr(f"{aimMatrixNode}.secondaryMode", 0)
             aimMatrixOutput = f"{aimMatrixNode}.outputMatrix"
 
-            pickMatrixNode = cmds.createNode("pickMatrix", name=f"noScale0{i+1}")
+            pickMatrixNode = cmds.createNode("pickMatrix", name=f"{suffix}0{i+1}_PKMX", ss=True)
             cmds.connectAttr(aimMatrixOutput, f"{pickMatrixNode}.inputMatrix")
             cmds.setAttr(f"{pickMatrixNode}.useScale", False)
             cmds.setAttr(f"{pickMatrixNode}.useShear", False)
             outputMatrix = f"{pickMatrixNode}.outputMatrix"
 
-            decomposeNode = cmds.createNode("decomposeMatrix", name=f"decomposeMatrix0{i+1}")
+            decomposeNode = cmds.createNode("decomposeMatrix", name=f"{suffix}0{i+1}_DCM", ss=True)
             cmds.connectAttr(outputMatrix, f"{decomposeNode}.inputMatrix")
 
-            composeNode = cmds.createNode("composeMatrix", name=f"composeMatrix0{i+1}")
+            composeNode = cmds.createNode("composeMatrix", name=f"{suffix}0{i+1}_CPM", ss=True)
             cmds.connectAttr(f"{decomposeNode}.outputTranslate", f"{composeNode}.inputTranslate")   
             cmds.connectAttr(f"{decomposeNode}.outputRotate", f"{composeNode}.inputRotate")
 
@@ -419,9 +512,19 @@ class LimbModule(object):
 
 
 
-            cmds.connectAttr(f"{composeNode}.outputMatrix", f"{pNode}.offsetParentMatrix")
+            cmds.connectAttr(f"{composeNode}.outputMatrix", f"{joint}.offsetParentMatrix")
 
-            joints.append(pNode)
+            
 
+            joints.append(joint)
+
+        if "lower" in suffix:
+                cmds.select(clear=True)
+                joint = cmds.joint(name=f"{suffix}0{i+2}_JNT", rad=0.5)
+                cmds.parent(joint, self.skinnging_grp)
+                cube = cmds.polyCube(name=f"pJoint{i}_cube", width=1, height=1, depth=1)[0]   
+                cmds.parent(cube, joint)
+                cmds.connectAttr(f"{blend_chain[-1]}.worldMatrix[0]", f"{joint}.offsetParentMatrix")
+                
 
 
