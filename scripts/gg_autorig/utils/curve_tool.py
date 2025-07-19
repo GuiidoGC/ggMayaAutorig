@@ -410,4 +410,3 @@ def mirror_shapes():
 
         print(f"Mirrored {len(src_shapes)} shapes from {src} → {tgt}")
 
-get_all_ctl_curves_data(prefix="GUIDE")
