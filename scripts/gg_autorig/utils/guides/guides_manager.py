@@ -13,6 +13,7 @@ def guides_export(file_name=None):
         """
 
         TEMPLATE_FILE = core.init_template_file(ext=".guides")
+        print(f"Exporting guides to {TEMPLATE_FILE}")
         
         guides_folder = cmds.ls(sl=True) or cmds.ls("guides_GRP", type="transform")
 
@@ -198,3 +199,4 @@ def fk_chain_import():
                                 fk_guides.append(guide_name)
         return fk_guides
                 
+guides_export()

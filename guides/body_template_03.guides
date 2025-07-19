@@ -8,7 +8,7 @@
             ],
             "worldRotation": [
                 0.0,
-                -15.619896078211898,
+                0.0,
                 0.0
             ],
             "parent": "L_elbow_GUIDE"
@@ -21,7 +21,7 @@
             ],
             "worldRotation": [
                 0.0,
-                -15.619896078211898,
+                0.0,
                 0.0
             ],
             "parent": "L_shoulder_GUIDE"
@@ -34,7 +34,20 @@
             ],
             "worldRotation": [
                 0.0,
-                10.679774700849105,
+                0.0,
+                0.0
+            ],
+            "parent": "L_clavicle_GUIDE"
+        },
+        "L_armSettings_GUIDE": {
+            "worldPosition": [
+                6.245894403158255,
+                53.45809644368899,
+                0.0
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
                 0.0
             ],
             "parent": "L_clavicle_GUIDE"
@@ -54,9 +67,9 @@
         },
         "R_wrist_GUIDE": {
             "worldPosition": [
-                -19.0,
+                -18.63984095679776,
                 38.0,
-                0.0
+                0.13296764026259367
             ],
             "worldRotation": [
                 0.0,
@@ -67,9 +80,9 @@
         },
         "R_elbow_GUIDE": {
             "worldPosition": [
-                -13.0,
+                -12.861426202217666,
                 43.0,
-                0.0
+                -1.4825579472943096
             ],
             "worldRotation": [
                 0.0,
@@ -82,6 +95,19 @@
             "worldPosition": [
                 -5.0,
                 50.0,
+                0.0
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "R_clavicle_GUIDE"
+        },
+        "R_armSettings_GUIDE": {
+            "worldPosition": [
+                -6.246,
+                53.458,
                 0.0
             ],
             "worldRotation": [
@@ -156,6 +182,19 @@
             ],
             "parent": "L_hip_GUIDE"
         },
+        "L_legSettings_GUIDE": {
+            "worldPosition": [
+                5.623,
+                32.0,
+                0.0
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "L_hip_GUIDE"
+        },
         "L_hip_GUIDE": {
             "worldPosition": [
                 3.0,
@@ -212,6 +251,19 @@
             "worldPosition": [
                 -3.0,
                 17.0,
+                0.0
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "R_hip_GUIDE"
+        },
+        "R_legSettings_GUIDE": {
+            "worldPosition": [
+                -5.622765335273768,
+                32.0,
                 0.0
             ],
             "worldRotation": [
@@ -330,6 +382,19 @@
                 20.78,
                 35.76,
                 1.69
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "L_metacarpalIndex_GUIDE"
+        },
+        "L_metacarpalIndex_GUIDE": {
+            "worldPosition": [
+                19.2,
+                37.42,
+                1.59
             ],
             "worldRotation": [
                 0.0,
@@ -468,20 +533,6 @@
             ],
             "parent": "guides_GRP"
         },
- 	"L_metacarpalIndex_GUIDE": {
-            "worldPosition": [
-                19.2,
-                37.42,
-                1.59
-            ],
-            "worldRotation": [
-                0.0,
-                0.0,
-                0.0
-            ],
-            "parent": "guides_GRP"
-        },
-
         "L_pinkyEnd_GUIDE": {
             "worldPosition": [
                 22.47,
@@ -649,6 +700,19 @@
                 0.0,
                 0.0
             ],
+            "parent": "R_metacarpalIndex_GUIDE"
+        },
+        "R_metacarpalIndex_GUIDE": {
+            "worldPosition": [
+                -19.2,
+                37.42,
+                1.59
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
             "parent": "guides_GRP"
         },
         "R_middleEnd_GUIDE": {
@@ -781,20 +845,6 @@
             ],
             "parent": "guides_GRP"
         },
-	"R_metacarpalIndex_GUIDE": {
-            "worldPosition": [
-                19.22,
-                37.42,
-                1.59
-            ],
-            "worldRotation": [
-                0.0,
-                0.0,
-                0.0
-            ],
-            "parent": "guides_GRP"
-        },
-
         "R_pinkyEnd_GUIDE": {
             "worldPosition": [
                 -22.47,
@@ -912,7 +962,7 @@
             ],
             "parent": "guides_GRP"
         },
-        "L_L_heel_GUIDE": {
+        "L_heel_GUIDE": {
             "worldPosition": [
                 3.0,
                 0.0,
@@ -923,9 +973,9 @@
                 0.0,
                 0.0
             ],
-            "parent": "L_L_bankIn_GUIDE"
+            "parent": "L_bankIn_GUIDE"
         },
-        "L_L_bankIn_GUIDE": {
+        "L_bankIn_GUIDE": {
             "worldPosition": [
                 1.0,
                 0.0,
@@ -936,9 +986,9 @@
                 0.0,
                 0.0
             ],
-            "parent": "L_L_bankOut_GUIDE"
+            "parent": "L_bankOut_GUIDE"
         },
-        "L_L_bankOut_GUIDE": {
+        "L_bankOut_GUIDE": {
             "worldPosition": [
                 6.0,
                 0.0,
@@ -951,7 +1001,7 @@
             ],
             "parent": "guides_GRP"
         },
-        "R_L_heel_GUIDE": {
+        "R_heel_GUIDE": {
             "worldPosition": [
                 -3.0,
                 0.0,
@@ -962,9 +1012,9 @@
                 0.0,
                 0.0
             ],
-            "parent": "R_L_bankIn_GUIDE"
+            "parent": "R_bankIn_GUIDE"
         },
-        "R_L_bankIn_GUIDE": {
+        "R_bankIn_GUIDE": {
             "worldPosition": [
                 -1.0,
                 0.0,
@@ -975,9 +1025,9 @@
                 0.0,
                 0.0
             ],
-            "parent": "R_L_bankOut_GUIDE"
+            "parent": "R_bankOut_GUIDE"
         },
-        "R_L_bankOut_GUIDE": {
+        "R_bankOut_GUIDE": {
             "worldPosition": [
                 -6.0,
                 0.0,
