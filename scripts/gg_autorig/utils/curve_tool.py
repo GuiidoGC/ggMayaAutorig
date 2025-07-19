@@ -138,6 +138,8 @@ def get_all_ctl_curves_data(path = "",prefix="CTL"):
     with open(TEMPLATE_FILE, "w") as f:
         json.dump(ctl_data, f, indent=4)
 
+    print(f"Controller curves data saved to {TEMPLATE_FILE}")
+
 
 def build_curves_from_template(target_transform_name=None, path=None):
     """
@@ -407,3 +409,5 @@ def mirror_shapes():
                 cmds.setAttr(f'{new_shape}.overrideColor', tgt_col)
 
         print(f"Mirrored {len(src_shapes)} shapes from {src} → {tgt}")
+
+get_all_ctl_curves_data(prefix="GUIDE")

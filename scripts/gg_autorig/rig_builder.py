@@ -3,8 +3,10 @@
 # Tools / utils import
 from gg_autorig.utils import basic_structure
 from gg_autorig.utils import data_export
-from gg_autorig.utils.guides import guides_manager
-from gg_autorig.utils import curve_tool
+# from gg_autorig.utils.guides import guides_manager
+
+# Rig modules import
+from gg_autorig.autorig import limb_module as lbm
 
 # Python libraries import
 import maya.cmds as cmds
@@ -13,7 +15,8 @@ from importlib import reload
 
 reload(basic_structure)
 reload(data_export)
-reload(guides_manager)
+# reload(guides_manager)
+reload(lbm)
 
 def rename_ctl_shapes():
     """
@@ -52,17 +55,14 @@ def make():
     It also sets the radius for all joints and displays a completion message.
     """   
 
-    complete_path = os.path.realpath(__file__)
-    relative_path = complete_path.split("\scripts")[0]
-    guides_path = os.path.join(relative_path, "guides", "aychedral_GUIDES_001.guides")
-    curves_path = os.path.join(relative_path, "curves", "AYCHEDRAL_curves_001.json") 
-    guides_manager.init_template_file(guides_path)
-    curve_tool.init_template_file(curves_path)
-
     data_exporter = data_export.DataExport()
     data_exporter.new_build()
 
-    basic_structure.create_basic_structure(asset_name = "AYCHEDRAL")
+    basic_structure.create_basic_structure(asset_name = "BIPED_TEST")
+
+    limb_module = lbm.LimbModule()
+    limb_module.create_limb()
+
     
   
     rename_ctl_shapes()

@@ -37,7 +37,8 @@ def create_basic_structure(asset_name = "assetName"):
                 "modules_GRP",
                 "skel_GRP",
                 "geoLayering_GRP",
-                "skeletonHirearchy_GRP"
+                "skeletonHirearchy_GRP",
+                "guides_GRP",
             },
             "model_GRP": {
                 "SKELETON",
@@ -56,13 +57,24 @@ def create_basic_structure(asset_name = "assetName"):
     secondary_transforms = []
     rig_transforms = []
 
+
+
     for folder, subfolders in folder_structure[asset_name].items():
         secondary_transform = cmds.createNode("transform", name=folder, parent=main_transform, ss=True)
         secondary_transforms.append(secondary_transform)
         subfolders = sorted(list(subfolders))
         for subfolder in subfolders:
+
             if subfolder.startswith("C_"):
-                ctl, grp = controller_creator(subfolder, ["GRP", "ANM"])
+
+                lock_attrs = ["sx", "sy", "sz", "v"]
+                ro=False
+                if "preferences" in subfolder:
+                    lock_attrs += ["tx", "ty", "tz", "rx", "ry", "rz"]
+                    ro= True
+
+                ctl, grp = controller_creator(subfolder, ["GRP", "ANM"], lock=lock_attrs, ro=ro)
+
                 cmds.setAttr(f"{ctl}.overrideEnabled", 1)
                 if ctls:
                     cmds.parent(grp[0], ctls[-1])
@@ -73,10 +85,13 @@ def create_basic_structure(asset_name = "assetName"):
                 trn = cmds.createNode("transform", name=subfolder, parent=secondary_transform, ss=True)
                 rig_transforms.append(trn)
 
+    print(rig_transforms)
+
     data_exporter = data_export.DataExport()
-    data_exporter.append_data("basic_structure", {"modules_GRP": rig_transforms[1],
-                                                  "skel_GRP": rig_transforms[2],
-                                                  "masterWalk_CTL": ctls[1],})
+    data_exporter.append_data("basic_structure", {"modules_GRP": rig_transforms[2],
+                                                  "skel_GRP": rig_transforms[3],
+                                                  "masterWalk_CTL": ctls[1],
+                                                  "guides_GRP": rig_transforms[1],})
 
 
     cmds.addAttr(ctls[2], shortName="extraAttributesSep", niceName="EXTRA ATTRIBUTES_____", enumName="_____",attributeType="enum", keyable=False)
@@ -97,21 +112,20 @@ def create_basic_structure(asset_name = "assetName"):
     cmds.addAttr(ctls[1], shortName="extraAttributesSep", niceName="EXTRA ATTRIBUTES_____", enumName="_____",attributeType="enum", keyable=True)
     cmds.addAttr(ctls[1], shortName="globalScale", niceName="Global Scale", minValue=0.001,defaultValue=1, keyable=True)
     cmds.setAttr(ctls[1]+".extraAttributesSep", channelBox=True, lock=True)
-    cmds.connectAttr(ctls[1]+".globalScale", ctls[1] + ".scaleX", force=True)
-    cmds.connectAttr(ctls[1]+".globalScale", ctls[1] + ".scaleY", force=True)
-    cmds.connectAttr(ctls[1]+".globalScale", ctls[1] + ".scaleZ", force=True)
 
-    condition(f"{ctls[2]}.meshLods", rig_transforms[7], 0)
-    condition(f"{ctls[2]}.meshLods", rig_transforms[6], 1)
-    condition(f"{ctls[2]}.meshLods", rig_transforms[4], 2)
-    condition(f"{ctls[2]}.meshLods", rig_transforms[5], 3)
+    for attr in ["sx", "sy", "sz"]:
+        cmds.setAttr(f"{ctls[1]}.{attr}", keyable=False, channelBox=False, lock=False)
+        cmds.connectAttr(ctls[1]+".globalScale", ctls[1] + f".{attr}", force=True)
+
+        cmds.setAttr(f"{ctls[1]}.{attr}", keyable=False, channelBox=False, lock=True)
+
+    # Optimize meshLods visibility conditions using a loop
+    mesh_lods_indices = [7, 6, 4, 5]
+    for value, idx in enumerate(mesh_lods_indices):
+        condition(f"{ctls[2]}.meshLods", rig_transforms[idx], value)
 
     cmds.connectAttr(f"{ctls[2]}.showModules", rig_transforms[1]+ ".visibility")
     cmds.connectAttr(f"{ctls[2]}.showJoints", rig_transforms[2] + ".visibility")
-
-    lock_attr(ctls[2], ["tx", "tz", "ty", "rx", "ry", "rz", "scaleX", "scaleY", "scaleZ", "visibility"])
-    lock_attr(ctls[0])
-    lock_attr(ctls[1])
 
     cmds.select(clear=True)
 

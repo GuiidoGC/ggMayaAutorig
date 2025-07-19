@@ -470,9 +470,9 @@
         },
  	"L_metacarpalIndex_GUIDE": {
             "worldPosition": [
-                19.22,
-                37.48,
-                -0.20999999999999996
+                19.2,
+                37.42,
+                1.59
             ],
             "worldRotation": [
                 0.0,
@@ -783,9 +783,9 @@
         },
 	"R_metacarpalIndex_GUIDE": {
             "worldPosition": [
-                -19.22,
-                37.48,
-                -0.20999999999999996
+                19.22,
+                37.42,
+                1.59
             ],
             "worldRotation": [
                 0.0,

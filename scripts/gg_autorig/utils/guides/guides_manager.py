@@ -3,12 +3,9 @@ import maya.OpenMaya as om
 import os
 import json
 from gg_autorig.utils import core
+from gg_autorig.utils import data_export
 from importlib import reload
 reload(core)
-
-
-
-
 
 def guides_export(file_name=None):
         """
@@ -57,6 +54,22 @@ def guides_export(file_name=None):
 
         om.MGlobal.displayInfo(f"Guides data exported to {TEMPLATE_FILE}")
 
+def get_data(name):
+
+    final_path = core.init_template_file(ext=".guides", export=False)
+
+    with open(final_path, "r") as infile:
+                guides_data = json.load(infile)
+
+    for template_name, guides in guides_data.items():
+        for guide_name, guide_info in guides.items():
+            if name in guide_name:
+                world_position = guide_info.get("worldPosition")
+                parent = guide_info.get("parent")
+                return world_position, parent
+    return None, None
+
+
 def guide_import(joint_name, all_descendents=True, path=None):
         """
         Imports guides from a JSON file into the Maya scene.
@@ -67,17 +80,69 @@ def guide_import(joint_name, all_descendents=True, path=None):
         Returns:
                 list: A list of imported joint names if joint_name is not "all", otherwise returns the world position and rotation of the specified joint.
         """
-
-        TEMPLATE_FILE = core.init_template_file(ext=".guides", export=False, path=path)
-
-
-        name = os.path.splitext(os.path.basename(TEMPLATE_FILE))[0]
-
-
-        with open(TEMPLATE_FILE, "r") as infile:
-                guides_data = json.load(infile)
         
-        joints_chain = []                    
+        data_exporter = data_export.DataExport()
+        guides_grp = data_exporter.get_data("basic_structure", "guides_GRP")
+
+
+        if cmds.objExists(guides_grp):
+                guide_grp = guides_grp
+        else:
+                guide_grp = cmds.createNode("transform", name="guides_GRP")
+
+        transforms_chain_export = []
+
+        if all_descendents:
+                
+                if all_descendents is True:
+                        world_position, parent = get_data(joint_name)
+                        guide_transform = cmds.createNode('transform', name=joint_name)
+                        cmds.xform(guide_transform, ws=True, t=world_position)
+                        cmds.parent(guide_transform, guide_grp)
+                        transforms_chain_export.append(guide_transform)
+
+
+                        final_path = core.init_template_file(ext=".guides", export=False)
+                        with open(final_path, "r") as infile:
+                                        guides_data = json.load(infile)
+
+                        guide_set_name = next(iter(guides_data))
+                        parent_map = {joint: data.get("parent") for joint, data in guides_data[guide_set_name].items()}
+                        transforms_chain = []
+                        processing_queue = [joint for joint, parent in parent_map.items() if parent == joint_name]
+
+                        while processing_queue:
+                                joint = processing_queue.pop(0)
+                                cmds.select(clear=True)
+                                imported_transform = cmds.createNode('transform', name=joint)
+                                position = guides_data[guide_set_name][joint]["worldPosition"]
+                                cmds.xform(imported_transform, ws=True, t=position)
+                                parent = parent_map[joint]
+                                if parent and parent != "C_root_JNT":
+                                                cmds.parent(imported_transform, parent)
+                                transforms_chain.append(joint)
+                                children = [child for child, p in parent_map.items() if p == joint]
+                                processing_queue.extend(children)
+                                transforms_chain_export.append(imported_transform)
+                                                         
+        
+        
+        else:
+                world_position, parent = get_data(joint_name)
+                guide_transform = cmds.createNode('transform', name=joint_name)
+                cmds.xform(guide_transform, ws=True, t=world_position)
+                cmds.parent(guide_transform, guide_grp)
+                transforms_chain_export.append(guide_transform)
+
+        return transforms_chain_export
+
+
+
+
+               
+
+
+
 
 
         # for main_joint_name, data in guides_data[name].items():
@@ -94,23 +159,7 @@ def guide_import(joint_name, all_descendents=True, path=None):
         #                                 joints_chain.append(main_joint_name)
         #                                 break
 
-        # if all_descendents:
-        #         parent_map = {joint: data.get("parent") for joint, data in guides_data[name].items()}                             
-        #         processing_queue = [joint for joint, parent in parent_map.items() if parent == joint_name]      
-                
-        #         while processing_queue:
-        #                         joint = processing_queue.pop(0)
-        #                         cmds.select(clear=True)
-        #                         imported_joint = cmds.joint(name=joint, rad=50)
-        #                         cmds.setAttr(f"{imported_joint}.translate", guides_data[name][joint]["worldPosition"][0], guides_data[name][joint]["worldPosition"][1], guides_data[name][joint]["worldPosition"][2])
-        #                         cmds.setAttr(f"{imported_joint}.rotate", guides_data[name][joint]["worldRotation"][0], guides_data[name][joint]["worldRotation"][1], guides_data[name][joint]["worldRotation"][2])
-        #                         cmds.makeIdentity(imported_joint, apply=True, r=True)
-        #                         cmds.setAttr(f"{imported_joint}.preferredAngle", guides_data[name][joint]["preferredAngle"][0], guides_data[name][joint]["preferredAngle"][1], guides_data[name][joint]["preferredAngle"][2])  
-        #                         parent = parent_map[joint]
-        #                         if parent != "C_root_JNT":
-        #                                 cmds.parent(imported_joint, parent)
-        #                         joints_chain.append(joint)
-        #                         processing_queue.extend([child for child, parent in parent_map.items() if parent == joint])
+
                 
         # cmds.select(clear=True)
         # if joints_chain:
