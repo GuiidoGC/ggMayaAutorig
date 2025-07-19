@@ -199,4 +199,3 @@ def fk_chain_import():
                                 fk_guides.append(guide_name)
         return fk_guides
                 
-guides_export()
