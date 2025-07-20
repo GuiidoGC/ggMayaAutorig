@@ -21,9 +21,12 @@ class LimbModule(object):
 
     def __init__(self):
 
-        self.side = "L"
-        self.module_name = "arm"
-        self.first_joint = "shoulder"
+        self.side = "R"
+        self.module_name = "leg"
+        self.first_joint = "hip"
+
+        self.secondary_aim = (0, 0, -1) # negative for leg
+        self.prefered_angle = (0, 1, 0)  # positive for leg 
 
         self.mirror = False
 
@@ -48,8 +51,14 @@ class LimbModule(object):
         """        
         self.guides = guide_import(f"{self.side}_{self.first_joint}_GUIDE", all_descendents=True, path=None)
 
+        if len(self.guides) > 3:
+            self.leg_guides = [self.guides[3], self.guides[4]]
+            self.guides = [self.guides[0], self.guides[1], self.guides[2]]
+
         #Position Joints
         order = [[self.guides[0], self.guides[1], self.guides[2]], [self.guides[1], self.guides[2], self.guides[0]]]
+        print(self.guides)
+        print(self.leg_guides)
 
         aim_matrix_guides = []
 
@@ -59,7 +68,7 @@ class LimbModule(object):
             multmatrix = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}GuideOffset0{i+1}_MMX", ss=True)
 
             cmds.setAttr(aim_matrix + ".primaryInputAxis", 1, 0, 0, type="double3")
-            cmds.setAttr(aim_matrix + ".secondaryInputAxis", 0, 0, 1, type="double3")
+            cmds.setAttr(aim_matrix + ".secondaryInputAxis", *self.secondary_aim, type="double3")
             
             cmds.setAttr(aim_matrix + ".primaryMode", 1)
             cmds.setAttr(aim_matrix + ".secondaryMode", 1)
@@ -357,7 +366,7 @@ class LimbModule(object):
             cmds.parent(joint, self.ik_chain[-1])
             self.ik_chain.append(joint)
 
-            cmds.setAttr(f"{joint}.preferredAngle", 0, -1, 0, type="double3")
+            cmds.setAttr(f"{joint}.preferredAngle", *self.prefered_angle, type="double3")
 
             distance_between = cmds.createNode("distanceBetween", name=f"{self.side}_{self.module_name}IkDistance0{i+1}_DB")
             cmds.connectAttr(f"{self.guides_matrix[i]}.outputMatrix", f"{distance_between}.inMatrix1")
