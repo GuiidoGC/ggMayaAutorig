@@ -114,6 +114,8 @@ def guide_import(joint_name, all_descendents=True, path=None):
 
                         while processing_queue:
                                 joint = processing_queue.pop(0)
+                                if "Settings" in joint:
+                                        continue
                                 cmds.select(clear=True)
                                 imported_transform = cmds.createNode('transform', name=joint)
                                 position = guides_data[guide_set_name][joint]["worldPosition"]
@@ -199,3 +201,4 @@ def fk_chain_import():
                                 fk_guides.append(guide_name)
         return fk_guides
                 
+# guides_export()
