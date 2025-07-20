@@ -60,7 +60,10 @@ def make():
 
     basic_structure.create_basic_structure(asset_name = "BIPED_TEST")
 
-    limb_module = lbm.LimbModule()
+    limb_module = lbm.LimbModule(side="L")
+    limb_module.create_limb()
+
+    limb_module = lbm.LimbModule(side="R")
     limb_module.create_limb()
 
     
