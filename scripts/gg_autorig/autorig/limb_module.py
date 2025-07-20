@@ -19,14 +19,21 @@ reload(guides_manager)
 
 class LimbModule(object):
 
-    def __init__(self):
+    def __init__(self, side="L"):
 
-        self.side = "R"
-        self.module_name = "leg"
-        self.first_joint = "hip"
+        self.side = side
+        self.module_name = "arm"
+        self.first_joint = "shoulder"
 
-        self.secondary_aim = (0, 0, -1) # negative for leg
-        self.prefered_angle = (0, 1, 0)  # positive for leg 
+        if self.side == "L":
+            self.primary_aim = (1, 0, 0)  # positive for arm
+            self.secondary_aim = (0, 0, 1) # negative for leg
+            self.prefered_angle = (0, -1, 0)  # positive for leg 
+
+        elif self.side == "R":
+            self.primary_aim = (-1, 0, 0)  # positive for arm
+            self.secondary_aim = (0, 0, -1) # negative for leg
+            self.prefered_angle = (0, 1, 0)  # positive for leg 
 
         self.mirror = False
 
@@ -57,8 +64,7 @@ class LimbModule(object):
 
         #Position Joints
         order = [[self.guides[0], self.guides[1], self.guides[2]], [self.guides[1], self.guides[2], self.guides[0]]]
-        print(self.guides)
-        print(self.leg_guides)
+
 
         aim_matrix_guides = []
 
@@ -67,7 +73,7 @@ class LimbModule(object):
             aim_matrix = cmds.createNode("aimMatrix", name=f"{self.side}_{self.module_name}Guide0{i+1}_AMX", ss=True)
             multmatrix = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}GuideOffset0{i+1}_MMX", ss=True)
 
-            cmds.setAttr(aim_matrix + ".primaryInputAxis", 1, 0, 0, type="double3")
+            cmds.setAttr(aim_matrix + ".primaryInputAxis", *self.primary_aim, type="double3")
             cmds.setAttr(aim_matrix + ".secondaryInputAxis", *self.secondary_aim, type="double3")
             
             cmds.setAttr(aim_matrix + ".primaryMode", 1)
@@ -125,9 +131,13 @@ class LimbModule(object):
 
             if not i == 0:
                 offset_multMatrix = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}FkOffset0{i+1}_MMX", ss=True)
+                inverse_matrix = cmds.createNode("inverseMatrix", name=f"{self.side}_{self.module_name}FkOffset0{i+1}_IMX", ss=True)
                 cmds.connectAttr(f"{guide}.outputMatrix", f"{offset_multMatrix}.matrixIn[0]")
-                cmds.connectAttr(f"{self.fk_grps[-1][0]}.worldInverseMatrix[0]", f"{offset_multMatrix}.matrixIn[1]")
 
+                cmds.connectAttr(f"{self.guides_matrix[i-1]}.outputMatrix", f"{inverse_matrix}.inputMatrix")
+
+                cmds.connectAttr(f"{inverse_matrix}.outputMatrix", f"{offset_multMatrix}.matrixIn[1]")
+            
                 decompose_matrix = cmds.createNode("decomposeMatrix", name=f"{self.side}_{self.module_name}FkOffset0{i+1}_DCM", ss=True)
                 compose_matrix = cmds.createNode("composeMatrix", name=f"{self.side}_{self.module_name}FkOffset0{i+1}_CMT", ss=True)
 
@@ -371,7 +381,8 @@ class LimbModule(object):
             distance_between = cmds.createNode("distanceBetween", name=f"{self.side}_{self.module_name}IkDistance0{i+1}_DB")
             cmds.connectAttr(f"{self.guides_matrix[i]}.outputMatrix", f"{distance_between}.inMatrix1")
             cmds.connectAttr(f"{self.guides_matrix[i+1]}.outputMatrix", f"{distance_between}.inMatrix2")
-            cmds.connectAttr(f"{distance_between}.distance", f"{joint}.tx")    
+            cmds.connectAttr(f"{distance_between}.distance", f"{joint}.tx")  
+
             self.distance_between_output.append(f"{distance_between}.distance")
 
         cmds.connectAttr(f"{self.root_ik_ctl}.worldMatrix[0]", f"{self.ik_chain[0]}.offsetParentMatrix")        
@@ -442,7 +453,7 @@ class LimbModule(object):
 
         cmds.delete(self.switch_pos)
 
-        cmds.addAttr(self.switch_ctl, shortName="switchIkFk", niceName="Switch IK --> FK", maxValue=1, minValue=0,defaultValue=0, keyable=True)
+        cmds.addAttr(self.switch_ctl, shortName="switchIkFk", niceName="Switch IK --> FK", maxValue=1, minValue=0,defaultValue=1, keyable=True)
         cmds.connectAttr(f"{self.switch_ctl}.switchIkFk", f"{self.fk_grps[0][0]}.visibility", force=True)
         rev = cmds.createNode("reverse", name=f"{self.side}_{self.module_name}FkVisibility_REV", ss=True)
         cmds.connectAttr(f"{self.switch_ctl}.switchIkFk", f"{rev}.inputX")
@@ -653,22 +664,22 @@ class LimbModule(object):
 
 
 
-        # if self.side == "R_" and self.module == "arm" or self.side == "R_" and self.module == "leg":
-        #     Upper = cmds.createNode("floatMath", name=f"{self.side}{self.module_name}UpperArmPinNegate_FLM")
-        #     Lower = cmds.createNode("floatMath", name=f"{self.side}{self.module_name}LowerArmPinNegate_FLM")
+        if self.side == "R":
+            Upper = cmds.createNode("floatMath", name=f"{self.side}{self.module_name}UpperArmPinNegate_FLM")
+            Lower = cmds.createNode("floatMath", name=f"{self.side}{self.module_name}LowerArmPinNegate_FLM")
 
-        #     cmds.connectAttr(created_nodes[28] + ".output", Upper+".floatA")
-        #     cmds.connectAttr(created_nodes[29] + ".output", Lower+".floatA")
-        #     cmds.setAttr(Upper+".operation", 2)
-        #     cmds.setAttr(Lower+".operation", 2)
-        #     cmds.setAttr(Upper+".floatB", -1)
-        #     cmds.setAttr(Lower+".floatB", -1)
+            cmds.connectAttr(created_nodes[28] + ".output", Upper+".floatA")
+            cmds.connectAttr(created_nodes[29] + ".output", Lower+".floatA")
+            cmds.setAttr(Upper+".operation", 2)
+            cmds.setAttr(Lower+".operation", 2)
+            cmds.setAttr(Upper+".floatB", -1)
+            cmds.setAttr(Lower+".floatB", -1)
 
-        #     cmds.connectAttr(Upper + ".outFloat", self.ik_chain[1]+".translateX")
-        #     cmds.connectAttr(Lower + ".outFloat", self.ik_chain[2]+".translateX")
-        # else:
-        cmds.connectAttr(created_nodes[28] + ".output", self.ik_chain[1]+".translateX", f=True)
-        cmds.connectAttr(created_nodes[29] + ".output", self.ik_chain[2]+".translateX", f=True)
+            cmds.connectAttr(Upper + ".outFloat", self.ik_chain[1]+".translateX", f=True)
+            cmds.connectAttr(Lower + ".outFloat", self.ik_chain[2]+".translateX", f=True)
+        else:
+            cmds.connectAttr(created_nodes[28] + ".output", self.ik_chain[1]+".translateX", f=True)
+            cmds.connectAttr(created_nodes[29] + ".output", self.ik_chain[2]+".translateX", f=True)
             
 
         upper_mult = cmds.createNode("multDoubleLinear", name=f"{self.side}_{self.module_name}FkUpperLengthMult_MDL")
@@ -681,7 +692,7 @@ class LimbModule(object):
         cmds.connectAttr(f"{self.fk_ctls[1]}.stretch", lower_mult+".input1")
 
         cmds.connectAttr(f"{upper_mult}.output", f"{self.fk_offset[0][1]}.inputTranslateX")    
-        cmds.connectAttr(f"{lower_mult}.output", f"{self.fk_offset[1][1]}.inputTranslateX")
+        cmds.connectAttr(f"{lower_mult}.output", f"{self.fk_offset[1][1]}.inputTranslateX")           
 
         self.curvature()
 
@@ -911,7 +922,7 @@ class LimbModule(object):
 
             joints.append(joint)
 
-        if "lower" in suffix:
+        if "Lower" in suffix:
                 cmds.select(clear=True)
                 joint = cmds.joint(name=f"{suffix}0{i+2}_JNT", rad=0.5)
                 cmds.parent(joint, self.skinnging_grp)
