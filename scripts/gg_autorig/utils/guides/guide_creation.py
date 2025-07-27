@@ -297,6 +297,10 @@ class GuideCreation(object):
                 if "Settings" in joint_name:
                     parent = self.guides[0]
                     type = "settings"
+                
+                if "localHip" in joint_name:
+                    parent = self.guides_trn
+                    
 
                 guide = self.controller_creator(
                     f"{side}_{joint_name}",
@@ -310,7 +314,7 @@ class GuideCreation(object):
 
 
             for i in range(len(self.guides) - 1):
-                if "Settings" in self.guides[i+1]:
+                if "Settings" in self.guides[i+1] or "localHip" in self.guides[i+1]:
                     continue
                 if not "metacarpal" in self.guides[i+1]:
                     curve = cmds.curve(d=1, p=[(1, 0, 0), (2, 0, 0)], n=f"{self.guides[i]}_to_{self.guides[i + 1]}_CRV")
@@ -416,6 +420,7 @@ class SpineGuideCreation(GuideCreation):
     position_data = {
         "spine01": get_data("spine01"),
         "spine02": get_data("spine02"),
+        "localHip": get_data("localHips"),
     }
 
 
