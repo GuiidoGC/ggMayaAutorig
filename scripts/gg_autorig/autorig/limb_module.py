@@ -25,47 +25,38 @@ class LimbModule(object):
         self.module_name = "arm"
         self.first_joint = "shoulder"
 
-        # arm setup
+        self.primary_aim = (1, 0, 0)
+        self.secondary_aim = (0, 0, 1) 
+        self.prefered_angle = (0, -1, 0) 
 
-        if self.side == "L":
-            self.primary_aim = (1, 0, 0)
-            self.secondary_aim = (0, 0, 1) 
-            self.prefered_angle = (0, -1, 0) 
-
-
-
-        elif self.side == "R":
-            self.primary_aim = (-1, 0, 0)
-            self.secondary_aim = (0, 0, -1)
-            self.prefered_angle = (0, -1, 0)
+        self.default_ik = 1
+        self.oriented_ik = False
 
 
+        self.data_exporter = data_export.DataExport()
 
-        self.mirror = False
+        self.modules_grp = self.data_exporter.get_data("basic_structure", "modules_GRP")
+        self.skel_grp = self.data_exporter.get_data("basic_structure", "skel_GRP")
+        self.masterWalk_ctl = self.data_exporter.get_data("basic_structure", "masterWalk_CTL")
+        self.guides_grp = self.data_exporter.get_data("basic_structure", "guides_GRP")
+        self.skelHierarchy_grp = self.data_exporter.get_data("basic_structure", "skeletonHierarchy_GRP")
 
-        data_exporter = data_export.DataExport()
 
-        self.modules_grp = data_exporter.get_data("basic_structure", "modules_GRP")
-        self.skel_grp = data_exporter.get_data("basic_structure", "skel_GRP")
-        self.masterWalk_ctl = data_exporter.get_data("basic_structure", "masterWalk_CTL")
-        self.guides_grp = data_exporter.get_data("basic_structure", "guides_GRP")
+    def make(self):
+
+        """
+        Create a limb rig with controllers and constraints.
+        This function sets up the basic structure for a limb, including controllers and constraints.
+        """      
 
         self.individual_module_grp = cmds.createNode("transform", name=f"{self.side}_{self.module_name}Module_GRP", parent=self.modules_grp, ss=True)
         self.individual_controllers_grp = cmds.createNode("transform", name=f"{self.side}_{self.module_name}Controllers_GRP", parent=self.masterWalk_ctl, ss=True)
         self.skinnging_grp = cmds.createNode("transform", name=f"{self.side}_{self.module_name}SkinningJoints_GRP", parent=self.skel_grp, ss=True)
 
-    
-
-    def create_limb(self):
-
-        """
-        Create a limb rig with controllers and constraints.
-        This function sets up the basic structure for a limb, including controllers and constraints.
-        """        
         self.guides = guide_import(f"{self.side}_{self.first_joint}_GUIDE", all_descendents=True, path=None)
 
         if len(self.guides) > 3:
-            self.leg_guides = [self.guides[3], self.guides[4]]
+            self.leg_guides = [f"{self.guides[3]}.worldMatrix[0]", f"{self.guides[4]}.worldMatrix[0]"]
             self.guides = [self.guides[0], self.guides[1], self.guides[2]]
 
         #Position Joints
@@ -117,7 +108,6 @@ class LimbModule(object):
             ctl, ctl_grp = controller_creator(
                 name=self.guides[i].replace("_GUIDE", "Fk"),
                 suffixes=["GRP", "ANM"],
-                mirror=self.mirror,
                 lock=["scaleX", "scaleY", "scaleZ", "visibility"],
                 ro=True,
             )
@@ -299,9 +289,6 @@ class LimbModule(object):
 
         return blend_matrix
 
-
-        return blend_matrix
-
     def ik_rig(self):
         """
         Create IK chain for the limb.
@@ -310,9 +297,8 @@ class LimbModule(object):
         self.ik_controllers = cmds.createNode("transform", name=f"{self.side}_{self.module_name}IkControllers_GRP", parent=self.individual_controllers_grp, ss=True)
 
         self.root_ik_ctl, self.root_ik_ctl_grp = controller_creator(
-            name=f"{self.side}_RootIk",
+            name=f"{self.side}_{self.module_name}RootIk",
             suffixes=["GRP", "ANM"],
-            mirror=self.mirror,
             lock=["sx","sz","sy","visibility"],
             ro=True,
             parent=self.ik_controllers
@@ -320,34 +306,20 @@ class LimbModule(object):
         self.pv_ik_ctl, self.pv_ik_ctl_grp = controller_creator(
             name=f"{self.side}_{self.module_name}PV",
             suffixes=["GRP", "ANM"],
-            mirror=self.mirror,
             lock=["rx", "ry", "rz", "sx","sz","sy","visibility"],
             ro=False,
             parent=self.ik_controllers
 
         )
         self.hand_ik_ctl, self.hand_ik_ctl_grp = controller_creator(
-            name=f"{self.side}_HandIk",
+            name=f"{self.side}_{self.module_name}Ik",
             suffixes=["GRP", "ANM"],
-            mirror=self.mirror,
             lock=["visibility"],
             ro=True,
             parent=self.ik_controllers
 
         )
 
-        cmds.addAttr(self.hand_ik_ctl, shortName="ikControls", niceName="IK Controls  ———", enumName="———",attributeType="enum", keyable=True)
-        cmds.addAttr(self.hand_ik_ctl, shortName="curvature", niceName="Curvature", maxValue=1, minValue=0,defaultValue=0, keyable=True)
-        cmds.setAttr(self.hand_ik_ctl+".ikControls", channelBox=True, lock=True)
-        cmds.addAttr(self.hand_ik_ctl, shortName="soft", niceName="Soft",minValue=0,maxValue=1,defaultValue=0, keyable=True)
-        cmds.addAttr(self.hand_ik_ctl, shortName="twist", niceName="Twist",minValue=-180,defaultValue=0, maxValue=180, keyable=True)
-        cmds.addAttr(self.hand_ik_ctl, shortName="upperTwist", niceName="Upper Twist",defaultValue=0, keyable=True)
-
-        cmds.addAttr(self.hand_ik_ctl, shortName="strechySep", niceName="Strechy  ———", enumName="———",attributeType="enum", keyable=True)
-        cmds.setAttr(self.hand_ik_ctl+".strechySep", channelBox=True, lock=True)
-        cmds.addAttr(self.hand_ik_ctl, shortName="upperLengthMult", niceName="Upper Length Mult",minValue=0.001,defaultValue=1, keyable=True)
-        cmds.addAttr(self.hand_ik_ctl, shortName="lowerLengthMult", niceName="Lower Length Mult",minValue=0.001,defaultValue=1, keyable=True)
-        cmds.addAttr(self.hand_ik_ctl, shortName="stretch", niceName="Stretch",minValue=0,maxValue=1,defaultValue=0, keyable=True)
 
         cmds.addAttr(self.pv_ik_ctl, shortName="extraAttr", niceName="Extra Attributes  ———", enumName="———",attributeType="enum", keyable=True)
         cmds.setAttr(self.pv_ik_ctl+".extraAttr", channelBox=True, lock=True)
@@ -358,7 +330,76 @@ class LimbModule(object):
         cmds.addAttr(self.pv_ik_ctl, shortName="pin", niceName="Pin",minValue=0,maxValue=1,defaultValue=0, keyable=True)
         
         cmds.connectAttr(f"{self.guides_matrix[0]}.outputMatrix", f"{self.root_ik_ctl_grp[0]}.offsetParentMatrix")
-        cmds.connectAttr(f"{self.guides_matrix[2]}.outputMatrix", f"{self.hand_ik_ctl_grp[0]}.offsetParentMatrix")
+
+        if self.oriented_ik:
+            cmds.setAttr(f"{self.hand_ik_ctl_grp[0]}.inheritsTransform", 0)
+            self.hand_ws_ik_ctl, self.hand_ws_ik_ctl_grp = controller_creator(
+            name=f"{self.side}_{self.module_name}IK",
+            suffixes=["GRP","SDK","ANM"],
+            lock=["visibility"],
+            ro=True,
+            parent=self.ik_controllers
+            )
+        
+
+            pick_matrix = cmds.createNode("pickMatrix", name=f"{self.side}_{self.module_name}HandIkPick_MTX", ss=True)
+            parent_matrix = cmds.createNode("parentMatrix", name=f"{self.side}_{self.module_name}HandIkParent_MTX", ss=True)
+            cmds.setAttr(f"{pick_matrix}.useRotate", 0)
+
+            cmds.connectAttr(f"{self.guides_matrix[2]}.outputMatrix", f"{pick_matrix}.inputMatrix")
+            cmds.connectAttr(f"{self.guides_matrix[2]}.outputMatrix", f"{parent_matrix}.inputMatrix")
+
+            cmds.connectAttr(f"{pick_matrix}.outputMatrix", f"{self.hand_ws_ik_ctl_grp[0]}.offsetParentMatrix")
+
+            cmds.connectAttr(f"{self.hand_ws_ik_ctl}.worldMatrix[0]", f"{parent_matrix}.target[0].targetMatrix")
+
+            cmds.connectAttr(f"{parent_matrix}.outputMatrix", f"{self.hand_ik_ctl_grp[0]}.offsetParentMatrix")
+
+            temp_transform = cmds.createNode("transform", name=f"{self.side}_{self.module_name}HandIkTemp_TFM", ss=True)
+            cmds.connectAttr(f"{self.guides_matrix[2]}.outputMatrix", f"{temp_transform}.offsetParentMatrix")
+
+            child_dag = om.MSelectionList().add(temp_transform).getDagPath(0)
+            parent_dag = om.MSelectionList().add(self.hand_ws_ik_ctl).getDagPath(0)
+
+            child_world_matrix = child_dag.inclusiveMatrix()
+            parent_world_matrix = parent_dag.inclusiveMatrix()
+            
+            offset_matrix = child_world_matrix * parent_world_matrix.inverse()
+
+            cmds.setAttr(f"{parent_matrix}.target[0].offsetMatrix", offset_matrix, type="matrix")
+            cmds.delete(temp_transform)
+        
+        else:
+            self.hand_ws_ik_ctl = self.hand_ik_ctl
+            self.hand_ws_ik_ctl_grp = self.hand_ik_ctl_grp
+
+            cmds.connectAttr(f"{self.guides_matrix[2]}.outputMatrix", f"{self.hand_ik_ctl_grp[0]}.offsetParentMatrix")
+
+
+        
+
+
+        cmds.addAttr(self.hand_ws_ik_ctl, shortName="ikControls", niceName="IK Controls  ———", enumName="———",attributeType="enum", keyable=True)
+        cmds.addAttr(self.hand_ws_ik_ctl, shortName="curvature", niceName="Curvature", maxValue=1, minValue=0,defaultValue=0, keyable=True)
+        cmds.setAttr(self.hand_ws_ik_ctl+".ikControls", channelBox=True, lock=True)
+        cmds.addAttr(self.hand_ws_ik_ctl, shortName="soft", niceName="Soft",minValue=0,maxValue=1,defaultValue=0, keyable=True)
+        cmds.addAttr(self.hand_ws_ik_ctl, shortName="twist", niceName="Twist",minValue=-180,defaultValue=0, maxValue=180, keyable=True)
+        cmds.addAttr(self.hand_ws_ik_ctl, shortName="upperTwist", niceName="Upper Twist",defaultValue=0, keyable=True)
+        if self.oriented_ik:
+            cmds.addAttr(self.hand_ws_ik_ctl, shortName="OrientedController", niceName="Oriented Controller",attributeType="bool", keyable=False, defaultValue=False)
+            cmds.setAttr(self.hand_ik_ctl+".visibility", lock=False)
+            cmds.setAttr(self.hand_ws_ik_ctl+".OrientedController", channelBox=True)
+
+            cmds.connectAttr(f"{self.hand_ws_ik_ctl}.OrientedController", f"{self.hand_ik_ctl}.visibility", force=True)
+
+
+        cmds.addAttr(self.hand_ws_ik_ctl, shortName="strechySep", niceName="Strechy  ———", enumName="———",attributeType="enum", keyable=True)
+        cmds.setAttr(self.hand_ws_ik_ctl+".strechySep", channelBox=True, lock=True)
+        cmds.addAttr(self.hand_ws_ik_ctl, shortName="upperLengthMult", niceName="Upper Length Mult",minValue=0.001,defaultValue=1, keyable=True)
+        cmds.addAttr(self.hand_ws_ik_ctl, shortName="lowerLengthMult", niceName="Lower Length Mult",minValue=0.001,defaultValue=1, keyable=True)
+        cmds.addAttr(self.hand_ws_ik_ctl, shortName="stretch", niceName="Stretch",minValue=0,maxValue=1,defaultValue=0, keyable=True)
+
+
 
         pv_pos = self.create_matrix_pole_vector(
             f"{self.guides_matrix[0]}.outputMatrix",
@@ -388,18 +429,6 @@ class LimbModule(object):
             cmds.connectAttr(f"{self.guides_matrix[i]}.outputMatrix", f"{distance_between}.inMatrix1")
             cmds.connectAttr(f"{self.guides_matrix[i+1]}.outputMatrix", f"{distance_between}.inMatrix2")
 
-            # if self.side == "R":   
-            #     Upper = cmds.createNode("floatMath", name=self.guides[i+1].replace("_GUIDE", "Negate_DBT"), ss=True)
-            #     cmds.connectAttr(f"{distance_between}.distance", f"{Upper}.floatA")
-            #     cmds.setAttr(Upper+".operation", 2)
-            #     cmds.setAttr(Upper+".floatB", -1)
-
-            #     cmds.connectAttr(Upper + ".outFloat", f"{joint}.tx", f=True)
-
-            #     self.distance_between_output.append(f"{Upper}.outFloat")
-
-
-            # else:
             cmds.connectAttr(f"{distance_between}.distance", f"{joint}.tx")  
 
             self.distance_between_output.append(f"{distance_between}.distance")
@@ -413,7 +442,7 @@ class LimbModule(object):
             solver="ikRPsolver",
         )
         cmds.parent(self.ik_rps[0], self.individual_module_grp)
-        cmds.connectAttr(f"{self.hand_ik_ctl}.twist", f"{self.ik_rps[0]}.twist")
+        cmds.connectAttr(f"{self.hand_ws_ik_ctl}.twist", f"{self.ik_rps[0]}.twist")
 
 
         float_constant = cmds.createNode("floatConstant", name=f"{self.side}_{self.module_name}IkFloatConstant")
@@ -457,7 +486,7 @@ class LimbModule(object):
 
         cmds.delete(self.switch_pos)
 
-        cmds.addAttr(self.switch_ctl, shortName="switchIkFk", niceName="Switch IK --> FK", maxValue=1, minValue=0,defaultValue=1, keyable=True)
+        cmds.addAttr(self.switch_ctl, shortName="switchIkFk", niceName="Switch IK --> FK", maxValue=1, minValue=0,defaultValue=self.default_ik, keyable=True)
         cmds.connectAttr(f"{self.switch_ctl}.switchIkFk", f"{self.fk_grps[0][0]}.visibility", force=True)
         rev = cmds.createNode("reverse", name=f"{self.side}_{self.module_name}FkVisibility_REV", ss=True)
         cmds.connectAttr(f"{self.switch_ctl}.switchIkFk", f"{rev}.inputX")
@@ -493,7 +522,7 @@ class LimbModule(object):
             self.ik_floatMath = cmds.createNode("floatMath", name=f"{self.side}_{self.module_name}IkFloatMath", ss=True)
 
             cmds.connectAttr(f"{self.fk_ctls[0]}.upperTwist", f"{self.fk_floatMath}.floatA")
-            cmds.connectAttr(f"{self.hand_ik_ctl}.upperTwist", f"{self.ik_floatMath}.floatA")
+            cmds.connectAttr(f"{self.hand_ws_ik_ctl}.upperTwist", f"{self.ik_floatMath}.floatA")
 
             ik_joint_rotateX = cmds.xform(self.fk_joints[0], q=True, ro=True, ws=True)[0]
             cmds.setAttr(f"{self.fk_floatMath}.floatB", ik_joint_rotateX)
@@ -506,7 +535,7 @@ class LimbModule(object):
 
         else:
             cmds.connectAttr(f"{self.fk_ctls[0]}.upperTwist", f"{blend_two_attrs}.input[1]")
-            cmds.connectAttr(f"{self.hand_ik_ctl}.upperTwist", f"{blend_two_attrs}.input[0]")
+            cmds.connectAttr(f"{self.hand_ws_ik_ctl}.upperTwist", f"{blend_two_attrs}.input[0]")
 
 
         self.blend_chain = []
@@ -650,7 +679,7 @@ class LimbModule(object):
         cmds.connectAttr(created_nodes[2] + ".outFloat", created_nodes[23]+".floatB")
         cmds.connectAttr(created_nodes[4] + ".outFloat", created_nodes[24]+".floatA")
 
-        cmds.connectAttr(self.hand_ik_ctl + ".stretch", created_nodes[20]+".floatB")
+        cmds.connectAttr(self.hand_ws_ik_ctl + ".stretch", created_nodes[20]+".floatB")
 
         cmds.connectAttr(created_nodes[22] + ".outFloat", created_nodes[18]+".colorIfTrueR")
         cmds.connectAttr(created_nodes[23] + ".outFloat", created_nodes[18]+".colorIfTrueG")
@@ -660,9 +689,9 @@ class LimbModule(object):
 
         cmds.connectAttr(f"{self.root_ik_ctl}.worldMatrix", f"{created_nodes[0]}.inMatrix1")
         cmds.connectAttr(f"{self.ikHandleManager}.worldMatrix", f"{created_nodes[0]}.inMatrix2")
-        cmds.connectAttr(f"{self.hand_ik_ctl}.lowerLengthMult", f"{created_nodes[4]}.floatA")
-        cmds.connectAttr(f"{self.hand_ik_ctl}.upperLengthMult", f"{created_nodes[2]}.floatA")
-        cmds.connectAttr(f"{self.hand_ik_ctl}.soft", f"{created_nodes[5]}.inputValue")
+        cmds.connectAttr(f"{self.hand_ws_ik_ctl}.lowerLengthMult", f"{created_nodes[4]}.floatA")
+        cmds.connectAttr(f"{self.hand_ws_ik_ctl}.upperLengthMult", f"{created_nodes[2]}.floatA")
+        cmds.connectAttr(f"{self.hand_ws_ik_ctl}.soft", f"{created_nodes[5]}.inputValue")
         cmds.connectAttr(f"{self.masterWalk_ctl}.globalScale", f"{created_nodes[1]}.floatB")
 
         # setAttr nodes
@@ -735,7 +764,7 @@ class LimbModule(object):
         cmds.connectAttr(self.soft_trn + ".worldMatrix", created_nodes[27]+".inMatrix1")
 
         # cmds.disconnectAttr(f"{self.pv_ik_ctl}.worldMatrix[0]", f"{self.ik_rps[0]}.offsetParentMatrix")        
-        cmds.connectAttr(f"{self.ikHandleManager}.worldMatrix[0]", f"{self.ik_rps[0]}.offsetParentMatrix", force=True)
+        cmds.connectAttr(f"{self.soft_trn}.worldMatrix[0]", f"{self.ik_rps[0]}.offsetParentMatrix", force=True)
 
 
         cmds.connectAttr(created_nodes[28] + ".output", self.ik_chain[1]+".translateX", f=True)
@@ -824,7 +853,7 @@ class LimbModule(object):
 
         blend_two_attrs = cmds.createNode("blendTwoAttr", name=f"{self.side}{self.module_name}CurvatureBlend_BTA", ss=True)
         cmds.connectAttr(f"{self.switch_ctl}.switchIkFk", f"{blend_two_attrs}.attributesBlender")
-        cmds.connectAttr(f"{self.hand_ik_ctl}.curvature", f"{blend_two_attrs}.input[0]")
+        cmds.connectAttr(f"{self.hand_ws_ik_ctl}.curvature", f"{blend_two_attrs}.input[0]")
         cmds.connectAttr(f"{self.fk_ctls[0]}.curvature", f"{blend_two_attrs}.input[1]")
 
         for axe in ["X", "Y", "Z"]:
@@ -838,7 +867,7 @@ class LimbModule(object):
 
         cmds.delete(linearArmCurve, bezierArmCurve)
         
-        curvature_module = cmds.createNode("transform", name=f"{self.side}{self.module_name}Curvature_GRP", parent=self.individual_module_grp, ss=True)
+        curvature_module = cmds.createNode("transform", name=f"{self.side}_{self.module_name}Curvature_GRP", parent=self.individual_module_grp, ss=True)
 
         cmds.parent(self.degree2, midCurveLoc, cv_UpperLoc, cv_lowerLoc, curvature_module)
 
@@ -875,27 +904,14 @@ class LimbModule(object):
             cmds.setAttr(f"{blend_matrix}.target[0].weight", 0.5)
             cmds.setAttr(f"{blend_matrix}.target[0].scaleWeight", 0)
             cmds.setAttr(f"{blend_matrix}.target[0].rotateWeight", 0)
-            cmds.setAttr(f"{blend_matrix}.target[0].shearWeight", 0)
-
-            blend_matrix02 = cmds.createNode("blendMatrix", name=f"{self.side}_{self.module_name}{name}Bendy_BLM", ss=True)
-            cmds.connectAttr(f"{self.blend_chain[i]}.worldMatrix[0]", f"{blend_matrix02}.inputMatrix")
-            cmds.connectAttr(f"{self.blend_chain[i+1]}.worldMatrix[0]", f"{blend_matrix02}.target[0].targetMatrix")
-            cmds.setAttr(f"{blend_matrix02}.target[0].weight", 0.5)
-            cmds.setAttr(f"{blend_matrix02}.target[0].scaleWeight", 0)
-            cmds.setAttr(f"{blend_matrix02}.target[0].translateWeight", 0)
-            cmds.setAttr(f"{blend_matrix02}.target[0].shearWeight", 0)
-
-            decompose02 = cmds.createNode("decomposeMatrix", name=f"{self.side}_{self.module_name}{name}Bendy02_DCM", ss=True)
-            cmds.connectAttr(f"{blend_matrix02}.outputMatrix", f"{decompose02}.inputMatrix")
+            cmds.setAttr(f"{blend_matrix}.target[0].shearWeight", 0)        
 
             decompose = cmds.createNode("decomposeMatrix", name=f"{self.side}_{self.module_name}{name}Bendy01_DCM", ss=True)
             cmds.connectAttr(f"{blend_matrix}.outputMatrix", f"{decompose}.inputMatrix")
 
             compose = cmds.createNode("composeMatrix", name=f"{self.side}_{self.module_name}{name}Bendy_CPM", ss=True)
             cmds.connectAttr(f"{mpa}.allCoordinates", f"{compose}.inputTranslate")
-            cmds.connectAttr(f"{decompose}.outputRotateY", f"{compose}.inputRotateY")
-            cmds.connectAttr(f"{decompose}.outputRotateZ", f"{compose}.inputRotateZ")
-            cmds.connectAttr(f"{decompose02}.outputRotateX", f"{compose}.inputRotateX")
+            cmds.connectAttr(f"{decompose}.outputRotate", f"{compose}.inputRotate")
             cmds.connectAttr(f"{decompose}.outputScale", f"{compose}.inputScale")
             cmds.connectAttr(f"{decompose}.outputShear", f"{compose}.inputShear")
             cmds.connectAttr(f"{decompose}.outputQuat", f"{compose}.inputQuat")
@@ -1004,6 +1020,376 @@ class LimbModule(object):
                 cube = cmds.polyCube(name=f"pJoint{i}_cube", width=1, height=1, depth=1)[0]   
                 cmds.parent(cube, joint)
                 cmds.connectAttr(f"{blend_chain[-1]}.worldMatrix[0]", f"{joint}.offsetParentMatrix")
+
+    def parented_chain(self, skinning_joints):
+
+        joints = []
+
+        for joint in skinning_joints:
+            cmds.select(clear=True)
+            joint_env = cmds.createNode("joint", n=joint.replace("_JNT", "_ENV"))
+
+            if joints:
+
+                cmds.parent(joint_env, joints[-1])
+
+            joints.append(joint_env)    
+
+        for i, joint in enumerate(joints):
+            
+            if i != 0:
+                mult_matrix = cmds.createNode("multMatrix", n=joint.replace("_ENV", "_MMX"), ss=True)
+                cmds.connectAttr(skinning_joints[i] + ".worldMatrix[0]", mult_matrix + ".matrixIn[0]", force=True)
+                cmds.connectAttr(joints[i-1] + ".worldInverseMatrix[0]", mult_matrix + ".matrixIn[1]", force=True)
+                cmds.connectAttr(mult_matrix + ".matrixSum", joint + ".offsetParentMatrix", force=True)
+
+                for attr in ["tx", "ty", "tz", "rx", "ry", "rz"]:
+                    cmds.setAttr(joint + "." + attr, 0)
+
                 
 
+            else:
+                cmds.connectAttr(skinning_joints[i] + ".worldMatrix[0]", joint + ".offsetParentMatrix", force=True)
+                cmds.parent(joint, self.skelHierarchy_grp)
+
+        return joints
+
+
+class ArmModule(LimbModule):
+    """
+    Class for moditifying limb module specific to arms.
+    Inherits from LimbModule.
+    """
+
+    def __init__(self, side):
+
+        super().__init__(side)
+
+        self.module_name = "arm"
+        self.first_joint = "shoulder"
+
+        self.oriented_ik = False
+
+        # Arm-specific setup
+        if self.side == "L":
+            self.primary_aim = (1, 0, 0)
+            self.secondary_aim = (0, 0, 1)
+            self.prefered_angle = (0, -1, 0)
+
+        elif self.side == "R":
+            self.primary_aim = (-1, 0, 0)
+            self.secondary_aim = (0, 0, -1)
+            self.prefered_angle = (0, -1, 0)
+
+        self.default_ik = 1
+
+    def make(self):
+        super().make()
+        skinning_joints = cmds.listRelatives(self.skinnging_grp)
+
+        env_joints = self.parented_chain(skinning_joints)
+
+        self.clavicle()
+
+        self.data_exporter.append_data(
+            f"{self.side}_{self.module_name}Module",
+            {
+                "env_joints": env_joints,
+                "fk_ctl": self.fk_ctls,
+                "pv_ctl": self.pv_ik_ctl,   
+                "root_ctl": self.root_ik_ctl,
+                "end_ik": self.hand_ws_ik_ctl,
+                "clavicle_ctl": self.clavicle_ctl,
+
+            }
+        )
+    def clavicle(self):
+        
+        clavicle_guide = guide_import(f"{self.side}_clavicle_GUIDE", all_descendents=False, path=None)[0]
+
+        aim_matrix = cmds.createNode("aimMatrix", name=f"{self.side}_clavicle_AMX", ss=True)
+        cmds.connectAttr(f"{clavicle_guide}.worldMatrix[0]", f"{aim_matrix}.inputMatrix")
+        cmds.connectAttr(f"{self.guides_matrix[0]}.outputMatrix", f"{aim_matrix}.primaryTargetMatrix")
+
+
+        self.clavicle_ctl, self.clavicle_ctl_grp = controller_creator(
+            name=f"{self.side}_clavicle",
+            suffixes=["GRP", "OFF", "ANM"],
+            lock=["sx", "sz", "sy", "visibility"],
+            ro=True,
+            parent=self.masterWalk_ctl
+        )
+
+        cmds.connectAttr(f"{aim_matrix}.outputMatrix", f"{self.clavicle_ctl_grp[0]}.offsetParentMatrix")
+
+
+class LegModule(LimbModule):
+    """
+    Class for moditifying limb module specific to legs.
+    Inherits from LimbModule.
+    """
+
+    def __init__(self, side):
+
+        super().__init__(side)
+
+        self.module_name = "leg"
+        self.first_joint = "hip"
+
+        self.oriented_ik = True
+
+
+        # Leg-specific setup
+        if self.side == "L":
+            self.primary_aim = (1, 0, 0)
+            self.secondary_aim = (0, 0, -1)
+            self.prefered_angle = (0, 1, 0)
+
+        elif self.side == "R":
+            self.primary_aim = (-1, 0, 0)
+            self.secondary_aim = (0, 0, 1)
+            self.prefered_angle = (0, 1, 0)
+
+        self.default_ik = 0
+
+
+
+    def make(self):
+        super().make()
+        self.reverse_foot()
+        skinning_joints = cmds.listRelatives(self.skinnging_grp)
+
+        env_joints = self.parented_chain(skinning_joints)
+
+        self.data_exporter.append_data(
+            f"{self.side}_{self.module_name}Module",
+            {
+                "env_joints": env_joints,
+                "fk_ctl": self.fk_ctls,
+                "pv_ctl": self.pv_ik_ctl,
+                "root_ctl": self.root_ik_ctl,
+                "end_ik": self.hand_ws_ik_ctl,
+
+            }
+        )
+
+    def reverse_foot(self):
+        """
+        Reverse foot setup for leg module.  
+        This method creates the foot controls and sets up the necessary connections.
+
+        """
+
+        # FK CONTROLLERS
+
+        ctl, ctl_grp = controller_creator(
+            name=self.leg_guides[0].replace("_GUIDE.worldMatrix[0]", "Fk"),
+            suffixes=["GRP", "ANM"],
+            lock=["scaleX", "scaleY", "scaleZ", "visibility"],
+            ro=True,
+        )
+
+        cmds.select(clear=True)
+        joint = cmds.joint(name=self.leg_guides[0].replace("_GUIDE.worldMatrix[0]", "Fk_JNT"), rad=0.5)
+        cmds.parent(joint, self.individual_module_grp)
+        
+        cmds.connectAttr(f"{ctl}.worldMatrix[0]", f"{joint}.offsetParentMatrix")
+
+        cmds.parent(ctl_grp[0], self.fk_ctls[-1])
+
+        offset_multMatrix = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}FkOffset0{1}_MMX", ss=True)
+        inverse_matrix = cmds.createNode("inverseMatrix", name=f"{self.side}_{self.module_name}FkOffset0{1}_IMX", ss=True)
+        cmds.connectAttr(f"{self.leg_guides[0]}", f"{offset_multMatrix}.matrixIn[0]")
+
+        cmds.connectAttr(f"{self.guides_matrix[2]}.outputMatrix", f"{inverse_matrix}.inputMatrix")
+
+        cmds.connectAttr(f"{inverse_matrix}.outputMatrix", f"{offset_multMatrix}.matrixIn[1]")
+    
+        cmds.connectAttr(f"{offset_multMatrix}.matrixSum", f"{ctl_grp[0]}.offsetParentMatrix")
+
+        for attr in ["tx", "ty", "tz", "rx", "ry", "rz"]:
+            cmds.setAttr(f"{ctl_grp[0]}.{attr}", 0)
+
+        self.fk_ctls.append(ctl)
+        self.fk_grps.append(ctl_grp) 
+        self.fk_joints.append(joint)
+
+
+        # IK CONTROLLERS
+
+        self.leg_ik_guides = guide_import(f"{self.side}_bankOut_GUIDE", all_descendents=True, path=None)
+
+        self.ik_leg_guides = [f"{self.leg_ik_guides[0]}.worldMatrix[0]", f"{self.leg_ik_guides[1]}.worldMatrix[0]", f"{self.leg_ik_guides[2]}.worldMatrix[0]", self.leg_guides[1], self.leg_guides[0]]
+
+        self.reverse_ctl = []
+        self.reverse_ctl_grp = []
+        self.feet_joints = []
+
+        for guide in self.ik_leg_guides:
+
+
+            ctl, ctl_grp = controller_creator(
+                name=guide.replace("_GUIDE.worldMatrix[0]", "Ik"),
+                suffixes=["GRP", "SDK","ANM"],
+                lock=["sx","sz","sy","visibility"],
+                ro=True,
+                parent=self.ik_controllers
+            )
+
+            cmds.connectAttr(f"{guide}", f"{ctl_grp[0]}.offsetParentMatrix")
+
+            cmds.parent(ctl_grp[0], self.reverse_ctl[-1] if self.reverse_ctl else self.hand_ws_ik_ctl)
+
+            # Only create joints for the last two guides in the array
+            if guide in self.ik_leg_guides[-2:]:
+                cmds.select(clear=True)
+                joint = cmds.joint(name=guide.replace("_GUIDE.worldMatrix[0]", "Ik_JNT"), rad=0.5)
+                cmds.parent(joint, self.individual_module_grp)
+                cmds.matchTransform(joint, ctl, pos=True, rot=True, scl=False)
+
+
+
+
+                self.feet_joints.append(joint)
+                
+
+            self.reverse_ctl.append(ctl)
+            self.reverse_ctl_grp.append(ctl_grp)
+
+        cmds.parent(self.feet_joints[1], self.ik_chain[-1])
+        cmds.parent(self.feet_joints[0], self.feet_joints[1])
+        # IK HANDLE
+
+        self.ball_ik_handle = cmds.ikHandle(
+            name=f"{self.side}_{self.module_name}Ball_IKH",
+            startJoint=self.ik_chain[-1],
+            endEffector=self.feet_joints[1],
+            solver="ikSCsolver",
+        )[0]
+
+        self.toe_ik_handle = cmds.ikHandle(
+            name=f"{self.side}_{self.module_name}Toe_IKH",
+            startJoint=self.feet_joints[1],
+            endEffector=self.feet_joints[0],
+            solver="ikSCsolver",
+        )[0]
+
+        cmds.parent(self.ball_ik_handle, self.toe_ik_handle, self.individual_module_grp)
+
+        for i, ik_handle in enumerate([self.ball_ik_handle, self.toe_ik_handle]):
+            float_constant = cmds.createNode("floatConstant", name=ik_handle.replace("IKH", "FLM"), ss=True)
+            cmds.setAttr(f"{float_constant}.inFloat", 0)
+            cmds.connectAttr(f"{float_constant}.outFloat", f"{ik_handle}.tx", force=True)
+            cmds.connectAttr(f"{float_constant}.outFloat", f"{ik_handle}.ty", force=True)
+            cmds.connectAttr(f"{float_constant}.outFloat", f"{ik_handle}.tz", force=True)
+
+            cmds.connectAttr(f"{self.reverse_ctl[-1-i]}.worldMatrix[0]", f"{ik_handle}.offsetParentMatrix")
+
+        connection = cmds.listConnections(f"{self.ikHandleManager}.offsetParentMatrix")[0]
+
+        parent_matrix = cmds.createNode("parentMatrix", name=f"{self.side}_{self.module_name}IkHandleParent_MTX", ss=True)
+        cmds.connectAttr(f"{connection}.worldMatrix[0]", f"{parent_matrix}.inputMatrix")
+        cmds.connectAttr(f"{self.reverse_ctl[-1]}.worldMatrix[0]", f"{parent_matrix}.target[0].targetMatrix")
+        cmds.connectAttr(f"{parent_matrix}.outputMatrix", f"{self.ikHandleManager}.offsetParentMatrix", force=True)
+
+        child_dag = om.MSelectionList().add(connection).getDagPath(0)
+        parent_dag = om.MSelectionList().add(self.reverse_ctl[-1]).getDagPath(0)
+        
+        child_world_matrix = child_dag.inclusiveMatrix()
+        parent_world_matrix = parent_dag.inclusiveMatrix()
+        
+        offset_matrix = child_world_matrix * parent_world_matrix.inverse()
+
+        cmds.setAttr(f"{parent_matrix}.target[0].offsetMatrix", offset_matrix, type="matrix")
+
+        cmds.addAttr(self.hand_ws_ik_ctl, shortName="reverseFoot", niceName="Reverse foot  ———", enumName="———",attributeType="enum", keyable=True)
+        cmds.setAttr(self.hand_ws_ik_ctl+".reverseFoot", channelBox=True, lock=True)
+        cmds.addAttr(self.hand_ws_ik_ctl, shortName="roll", niceName="Roll",defaultValue=0, keyable=True)
+        cmds.addAttr(self.hand_ws_ik_ctl, shortName="rollLiftAngle", niceName="Roll Lift Angle",minValue=0,defaultValue=45, keyable=True)
+        cmds.addAttr(self.hand_ws_ik_ctl, shortName="rollStraightAngle", niceName="Roll Straight Angle",minValue=0,defaultValue=90, keyable=True)
+        cmds.addAttr(self.hand_ws_ik_ctl, shortName="bank", niceName="Bank",defaultValue=0, keyable=True)
+        cmds.addAttr(self.hand_ws_ik_ctl, shortName="ankleTwist", niceName="Ankle Twist",defaultValue=0, keyable=True)
+        cmds.addAttr(self.hand_ws_ik_ctl, shortName="ballTwist", niceName="Ball Twist",defaultValue=0, keyable=True)
+        cmds.addAttr(self.hand_ws_ik_ctl, shortName="tipTwist", niceName="Tip Twist",defaultValue=0, keyable=True)
+        cmds.addAttr(self.hand_ws_ik_ctl, shortName="heelTwist", niceName="Heel Twist",defaultValue=0, keyable=True)
+
+        # ----ADDING THE ROLL----#
+
+        ### GENERATED CODE ###
+        nodes_to_create = [
+            (f"{self.side}_rollStraightAnglePercentage_RMV", "remapValue", None), #0
+            (f"{self.side}_rollLiftAnglePercentage_RMV", "remapValue", None),  #1
+            (f"{self.side}_rollStraightAnglePercentage_REV", "reverse", None),  #2
+            (f"{self.side}_rollLiftAngleEnable_MDN", "multiplyDivide", None),  #3
+            (f"{self.side}_rollStrightAngle_MDN", "multiplyDivide", None), #4
+            (f"{self.side}_rollLiftAngle_MDN", "multiplyDivide", None),    #5
+            (f"{self.side}_rollStrightAngleNegate_MDN", "multiplyDivide", None),   #6
+            (f"{self.side}_rollHeel_CLM", "clamp", None),  #7
+            (f"{self.side}_footBank_CLM", "clamp", None),  #8
+            (f"{self.side}_rollLiftAngleNegate_MDN", "multiplyDivide", None),  #9
+        ]
+
+        created_nodes = []
+        for node_name, node_type, operation in nodes_to_create:
+            node = cmds.createNode(node_type, name=node_name)
+            created_nodes.append(node)
+            if operation is not None:
+                cmds.setAttr(f'{node}.operation', operation)
+
+        # Connections between selected nodes and transform nodes
+        cmds.connectAttr(created_nodes[0] + ".outValue", f"{created_nodes[4]}.input1X")
+        cmds.connectAttr(created_nodes[0] + ".outValue", f"{created_nodes[2]}.inputX")
+        cmds.connectAttr(f"{self.hand_ws_ik_ctl}.roll", created_nodes[0] + ".inputValue")
+        cmds.connectAttr(f"{self.hand_ws_ik_ctl}.rollLiftAngle", created_nodes[0] + ".inputMin")
+        cmds.connectAttr(f"{self.hand_ws_ik_ctl}.rollStraightAngle", created_nodes[0] + ".inputMax")
+        cmds.connectAttr(f"{self.hand_ws_ik_ctl}.roll", created_nodes[1] + ".inputValue")
+        cmds.connectAttr(f"{self.hand_ws_ik_ctl}.roll", created_nodes[7] + ".inputR")
+        cmds.connectAttr(f"{self.hand_ws_ik_ctl}.roll", created_nodes[5] + ".input2X")
+        cmds.connectAttr(f"{self.hand_ws_ik_ctl}.roll", created_nodes[4] + ".input2X")
+        cmds.connectAttr(f"{self.hand_ws_ik_ctl}.rollLiftAngle", created_nodes[1] + ".inputMax")
+        cmds.connectAttr(f"{self.hand_ws_ik_ctl}.bank", created_nodes[8] + ".inputG")
+        cmds.connectAttr(f"{self.hand_ws_ik_ctl}.bank", created_nodes[8] + ".inputR")
+        cmds.setAttr(f"{created_nodes[6]}.input2X", 1)
+        cmds.setAttr(f"{created_nodes[9]}.input2X", 1)
+        cmds.setAttr(f"{created_nodes[7]}.minR", -360)
+        if self.side == "L":
+            cmds.setAttr(f"{created_nodes[8]}.minG", -360)
+            cmds.setAttr(f"{created_nodes[8]}.maxR", 360)
+        elif self.side == "R":
+            cmds.setAttr(f"{created_nodes[8]}.minR", -360)
+            cmds.setAttr(f"{created_nodes[8]}.maxG", 360)
+        cmds.connectAttr(created_nodes[1] + ".outValue", f"{created_nodes[3]}.input2X")
+        cmds.connectAttr(created_nodes[2] + ".outputX", f"{created_nodes[3]}.input1X")
+        cmds.connectAttr(created_nodes[3] + ".outputX", f"{created_nodes[5]}.input1X")
+        cmds.connectAttr(created_nodes[4] + ".outputX", f"{created_nodes[6]}.input1X")
+        cmds.connectAttr(created_nodes[5] + ".outputX", f"{created_nodes[9]}.input1X")
+        cmds.connectAttr(created_nodes[8] + ".outputR", f"{self.reverse_ctl_grp[1][1]}.rotateZ")
+        cmds.connectAttr(created_nodes[8] + ".outputG", f"{self.reverse_ctl_grp[0][1]}.rotateZ")
+        cmds.connectAttr(created_nodes[7] + ".outputR", f"{self.reverse_ctl_grp[2][1]}.rotateX")
+        cmds.connectAttr(created_nodes[6] + ".outputX", f"{self.reverse_ctl_grp[3][1]}.rotateX")
+        cmds.connectAttr(created_nodes[9] + ".outputX", f"{self.reverse_ctl_grp[4][1]}.rotateX")
+        cmds.connectAttr(f"{self.hand_ws_ik_ctl}.heelTwist", f"{self.reverse_ctl_grp[2][1]}.rotateY")
+        cmds.connectAttr(f"{self.hand_ws_ik_ctl}.tipTwist", f"{self.reverse_ctl_grp[3][1]}.rotateY")
+        cmds.connectAttr(f"{self.hand_ws_ik_ctl}.ballTwist", f"{self.reverse_ctl_grp[4][1]}.rotateY")
+        cmds.connectAttr(f"{self.hand_ws_ik_ctl}.ankleTwist", self.hand_ws_ik_ctl_grp[1] + ".rotateY")
+
+
+        cmds.select(clear=True)
+        joint_blend = cmds.joint(name=self.fk_joints[-1].replace("Fk_JNT", "Blend_JNT"), rad=0.5)
+        blendMatrix = cmds.createNode("blendMatrix", name=f"{self.side}_{self.module_name}0{i+1}_BLM", ss=True)
+        cmds.connectAttr(f"{self.feet_joints[1]}.worldMatrix[0]", f"{blendMatrix}.inputMatrix")
+        cmds.connectAttr(f"{self.fk_joints[-1]}.worldMatrix[0]", f"{blendMatrix}.target[0].targetMatrix")
+        cmds.connectAttr(f"{self.switch_ctl}.switchIkFk", f"{blendMatrix}.target[0].weight")
+        
+        cmds.connectAttr(f"{blendMatrix}.outputMatrix", f"{joint_blend}.offsetParentMatrix")
+
+        cmds.parent(joint_blend, self.individual_module_grp)
+
+        cmds.select(clear=True)
+        joint = cmds.joint(name=joint_blend.replace("Blend_JNT", "Foot_JNT"), rad=0.5)
+        cmds.parent(joint, self.skinnging_grp)
+        cmds.connectAttr(f"{joint_blend}.worldMatrix[0]", f"{joint}.offsetParentMatrix")
+
+
+        self.blend_chain.append(joint)
 

@@ -37,14 +37,13 @@ def create_basic_structure(asset_name = "assetName"):
                 "modules_GRP",
                 "skel_GRP",
                 "geoLayering_GRP",
-                "skeletonHirearchy_GRP",
+                "skeletonHierarchy_GRP",
                 "guides_GRP",
             },
             "model_GRP": {
                 "SKELETON",
                 "PROXY",
-                "LOD_100",
-                "LOD_200"
+                "MODEL",
             },
             "groom_GRP": {},
             "clothSim_GRP": {}
@@ -85,13 +84,12 @@ def create_basic_structure(asset_name = "assetName"):
                 trn = cmds.createNode("transform", name=subfolder, parent=secondary_transform, ss=True)
                 rig_transforms.append(trn)
 
-    print(rig_transforms)
-
     data_exporter = data_export.DataExport()
     data_exporter.append_data("basic_structure", {"modules_GRP": rig_transforms[2],
                                                   "skel_GRP": rig_transforms[3],
                                                   "masterWalk_CTL": ctls[1],
-                                                  "guides_GRP": rig_transforms[1],})
+                                                  "guides_GRP": rig_transforms[1],
+                                                  "skeletonHierarchy_GRP": rig_transforms[4],})
 
 
     cmds.addAttr(ctls[2], shortName="extraAttributesSep", niceName="EXTRA ATTRIBUTES_____", enumName="_____",attributeType="enum", keyable=False)
@@ -99,10 +97,12 @@ def create_basic_structure(asset_name = "assetName"):
     cmds.addAttr(ctls[2], shortName="reference", niceName="Reference",attributeType="bool", keyable=False, defaultValue=True)
     cmds.setAttr(ctls[2]+".reference", channelBox=True)
 
-    cmds.addAttr(ctls[2], shortName="showModules", niceName="Show Modules",attributeType="bool", keyable=False, defaultValue=False)
+    cmds.addAttr(ctls[2], shortName="showModules", niceName="Show Modules",attributeType="bool", keyable=False, defaultValue=True)
+    cmds.addAttr(ctls[2], shortName="showSkeleton", niceName="Show Skeleton",attributeType="bool", keyable=False, defaultValue=True)
     cmds.addAttr(ctls[2], shortName="showJoints", niceName="Show Joints",attributeType="bool", keyable=False, defaultValue=True)
-    cmds.addAttr(ctls[2], shortName="meshLods", niceName="LODS", enumName="SKELETON:PROXY:LOD100:LOD200",attributeType="enum", keyable=False)
+    cmds.addAttr(ctls[2], shortName="meshLods", niceName="LODS", enumName="SKELETON:PROXY:MODEL",attributeType="enum", keyable=False)
     cmds.setAttr(ctls[2]+".showModules", channelBox=True)
+    cmds.setAttr(ctls[2]+".showSkeleton", channelBox=True)
     cmds.setAttr(ctls[2]+".showJoints", channelBox=True)
     cmds.setAttr(ctls[2]+".meshLods", channelBox=True)
 
@@ -120,12 +120,15 @@ def create_basic_structure(asset_name = "assetName"):
         cmds.setAttr(f"{ctls[1]}.{attr}", keyable=False, channelBox=False, lock=True)
 
     # Optimize meshLods visibility conditions using a loop
-    mesh_lods_indices = [7, 6, 4, 5]
+    mesh_lods_indices = [7, 6, 5]
     for value, idx in enumerate(mesh_lods_indices):
         condition(f"{ctls[2]}.meshLods", rig_transforms[idx], value)
 
-    cmds.connectAttr(f"{ctls[2]}.showModules", rig_transforms[1]+ ".visibility")
-    cmds.connectAttr(f"{ctls[2]}.showJoints", rig_transforms[2] + ".visibility")
+    cmds.connectAttr(f"{ctls[2]}.showModules", rig_transforms[2]+ ".visibility")
+    cmds.connectAttr(f"{ctls[2]}.showJoints", rig_transforms[3] + ".visibility")
+    cmds.connectAttr(f"{ctls[2]}.showSkeleton", rig_transforms[4] + ".visibility")
+    cmds.setAttr(f"{rig_transforms[0]}.visibility", 0)
+    cmds.setAttr(f"{rig_transforms[1]}.visibility", 0)
 
     cmds.select(clear=True)
 

@@ -7,6 +7,8 @@ from gg_autorig.utils import data_export
 
 # Rig modules import
 from gg_autorig.autorig import limb_module as lbm
+from gg_autorig.autorig import spine_module as spm
+
 
 # Python libraries import
 import maya.cmds as cmds
@@ -17,6 +19,7 @@ reload(basic_structure)
 reload(data_export)
 # reload(guides_manager)
 reload(lbm)
+reload(spm)
 
 def rename_ctl_shapes():
     """
@@ -58,16 +61,14 @@ def make():
     data_exporter = data_export.DataExport()
     data_exporter.new_build()
 
-    basic_structure.create_basic_structure(asset_name = "BIPED_TEST")
+    basic_structure.create_basic_structure(asset_name="BIPED_TEST")
 
-    limb_module = lbm.LimbModule(side="L")
-    limb_module.create_limb()
+    spm.SpineModule().make()
 
-    limb_module = lbm.LimbModule(side="R")
-    limb_module.create_limb()
+    # for side in ["L"]:
+    #     lbm.ArmModule(side=side).make()
+    #     lbm.LegModule(side=side).make()
 
-    
-  
     rename_ctl_shapes()
     joint_label()
 
