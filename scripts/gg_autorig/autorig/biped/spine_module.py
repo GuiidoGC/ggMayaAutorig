@@ -30,7 +30,6 @@ class SpineModule():
         self.skel_grp = self.data_exporter.get_data("basic_structure", "skel_GRP")
         self.masterWalk_ctl = self.data_exporter.get_data("basic_structure", "masterWalk_CTL")
         self.guides_grp = self.data_exporter.get_data("basic_structure", "guides_GRP")
-        self.skelHierarchy_grp = self.data_exporter.get_data("basic_structure", "skeletonHierarchy_GRP")
 
 
     def make(self):
@@ -51,19 +50,13 @@ class SpineModule():
 
         self.create_chain()
 
-        skinning_joints = cmds.listRelatives(self.skinning_trn)
-
-        env_joints = self.parented_chain(skinning_joints)
-
-        # self.data_exporter.append_data(f"C_spineModule", 
-        #                             {"lastSpineJnt": self.sub_spine_joints[-1],
-        #                             "localChest": self.localChest_ctl,
-        #                             "localHip": self.spine_hip_ctl,
-        #                             "body" : self.body_ctl,
-        #                             "body_grp" : self.body_ctl_grp,
-        #                             "spine_ctl" : self.spine_ctl,
-        #                             }
-        #                           )
+        self.data_exporter.append_data(f"C_spineModule", 
+                                    {"skinning_transform": self.skinning_trn,
+                                    "body_ctl": self.body_ctl,
+                                    "local_hip_ctl": self.localHip_ctl,
+                                    "local_chest_ctl": self.localChest_ctl,
+                                    }
+                                  )
 
     def create_chain(self):
         """
@@ -575,11 +568,6 @@ class SpineModule():
         for i, joint in enumerate(main_spine_joint):
             cmds.select(clear=True)
             new_joint = cmds.joint(joint, name=f"C_subSpineFk0{i+1}_JNT")
-            cube = cmds.polyCube(name=f"C_subSpineFk0{i+1}_JNTShape", w=1, h=1, d=1)
-            # Parent the poly cube to the new joint and zero out its transforms
-            cmds.parent(cube[0], new_joint)
-            for attr in ["translateX", "translateY", "translateZ", "rotateX", "rotateY", "rotateZ"]:
-                cmds.setAttr(f"{cube[0]}.{attr}", 0)
             cmds.setAttr(f"{new_joint}.inheritsTransform", 0)
 
             cmds.parent(new_joint, self.skinning_trn)
@@ -689,54 +677,3 @@ class SpineModule():
             for i in range(0,4):
                 cmds.setAttr(f"{created_nodes[5]}.value[{i}].value_Interp", 2)
                 cmds.setAttr(f"{created_nodes[5]}.value[{i}].value_FloatValue", values[i])
-
-    def parented_chain(self, skinning_joints):
-
-        # Move any joint containing 'Hip' to the end of the list
-        hip_joints = [j for j in skinning_joints if "Hip" in j]
-        other_joints = [j for j in skinning_joints if "Hip" not in j]
-        skinning_joints = other_joints + hip_joints
-
-        joints = []
-
-        for joint in skinning_joints:
-            cmds.select(clear=True)
-            joint_env = cmds.createNode("joint", n=joint.replace("_JNT", "_ENV"))
-
-            if joints:
-
-                cmds.parent(joint_env, joints[-1])
-
-            if "Hip" in joint:
-                cmds.parent(joint_env, joints[0])
-
-            joints.append(joint_env)
-
-        for i, joint in enumerate(joints):
-            
-            if "Hip" in joint:
-                mult_matrix = cmds.createNode("multMatrix", n=joint.replace("_ENV", "_MMX"), ss=True)
-                cmds.connectAttr(skinning_joints[i] + ".worldMatrix[0]", mult_matrix + ".matrixIn[0]", force=True)
-                cmds.connectAttr(joints[0] + ".worldInverseMatrix[0]", mult_matrix + ".matrixIn[1]", force=True)
-                cmds.connectAttr(mult_matrix + ".matrixSum", joint + ".offsetParentMatrix", force=True)
-
-                for attr in ["tx", "ty", "tz", "rx", "ry", "rz"]:
-                    cmds.setAttr(joint + "." + attr, 0)
-
-            elif i != 0:
-                mult_matrix = cmds.createNode("multMatrix", n=joint.replace("_ENV", "_MMX"), ss=True)
-                cmds.connectAttr(skinning_joints[i] + ".worldMatrix[0]", mult_matrix + ".matrixIn[0]", force=True)
-                cmds.connectAttr(joints[i-1] + ".worldInverseMatrix[0]", mult_matrix + ".matrixIn[1]", force=True)
-                cmds.connectAttr(mult_matrix + ".matrixSum", joint + ".offsetParentMatrix", force=True)
-
-                for attr in ["tx", "ty", "tz", "rx", "ry", "rz"]:
-                    cmds.setAttr(joint + "." + attr, 0)
-
-            else:
-                cmds.connectAttr(skinning_joints[i] + ".worldMatrix[0]", joint + ".offsetParentMatrix", force=True)
-                cmds.parent(joint, self.skelHierarchy_grp)
-
-            
-
-            
-        return joints

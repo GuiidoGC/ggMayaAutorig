@@ -1,0 +1,758 @@
+{
+    "elephant_02": {
+        "L_frontToe_GUIDE": {
+            "worldPosition": [
+                32.33505653715047,
+                0.06561425909334773,
+                94.27030079958993
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "L_frontFoot_GUIDE"
+        },
+        "L_frontFoot_GUIDE": {
+            "worldPosition": [
+                32.33505653715047,
+                22.516352844157517,
+                61.60123887209764
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "L_frontAnkle_GUIDE"
+        },
+        "L_frontAnkle_GUIDE": {
+            "worldPosition": [
+                32.33505653715047,
+                43.63231994192161,
+                61.601238872097646
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "L_frontKnee_GUIDE"
+        },
+        "L_frontKnee_GUIDE": {
+            "worldPosition": [
+                32.33505653715047,
+                135.09811706494574,
+                58.948390977115565
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "L_shoulder_GUIDE"
+        },
+        "L_shoulder_GUIDE": {
+            "worldPosition": [
+                32.33505653715047,
+                214.72489712304798,
+                71.52557928410528
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "L_scapula_GUIDE"
+        },
+        "L_frontLegSettings_GUIDE": {
+            "worldPosition": [
+                84.0830413331266,
+                280.4668512167005,
+                56.757957762506024
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "L_scapula_GUIDE"
+        },
+        "L_scapula_GUIDE": {
+            "worldPosition": [
+                32.33505653715047,
+                280.46685121670043,
+                56.75795776250602
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "guides_GRP"
+        },
+        "R_frontToe_GUIDE": {
+            "worldPosition": [
+                -32.33505653715047,
+                0.06561425909334773,
+                94.27030079958993
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "R_frontFoot_GUIDE"
+        },
+        "R_frontFoot_GUIDE": {
+            "worldPosition": [
+                -32.33505653715047,
+                22.516352844157517,
+                61.60123887209764
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "R_frontAnkle_GUIDE"
+        },
+        "R_frontAnkle_GUIDE": {
+            "worldPosition": [
+                -32.33505653715047,
+                43.63231994192161,
+                61.601238872097646
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "R_frontKnee_GUIDE"
+        },
+        "R_frontKnee_GUIDE": {
+            "worldPosition": [
+                -32.33505653715047,
+                135.09811706494574,
+                58.948390977115565
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "R_shoulder_GUIDE"
+        },
+        "R_shoulder_GUIDE": {
+            "worldPosition": [
+                -32.33505653715047,
+                214.72489712304798,
+                71.52557928410528
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "R_scapula_GUIDE"
+        },
+        "R_frontLegSettings_GUIDE": {
+            "worldPosition": [
+                -84.0830413331266,
+                280.4668512167005,
+                56.757957762506024
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "R_scapula_GUIDE"
+        },
+        "R_scapula_GUIDE": {
+            "worldPosition": [
+                -32.33505653715047,
+                280.46685121670043,
+                56.75795776250602
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "guides_GRP"
+        },
+        "L_backToe_GUIDE": {
+            "worldPosition": [
+                31.012700863129474,
+                0.1285469734561424,
+                -121.73007937335738
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "L_backFoot_GUIDE"
+        },
+        "L_backFoot_GUIDE": {
+            "worldPosition": [
+                31.012700863129474,
+                20.55721687225323,
+                -154.32412820340207
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "L_backAnkle_GUIDE"
+        },
+        "L_backAnkle_GUIDE": {
+            "worldPosition": [
+                31.012700863129474,
+                32.31203270368019,
+                -159.29731951669808
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "L_backKnee_GUIDE"
+        },
+        "L_backKnee_GUIDE": {
+            "worldPosition": [
+                31.012700863129474,
+                96.38579112235911,
+                -150.5040426951588
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "L_hip_GUIDE"
+        },
+        "L_backLegSettings_GUIDE": {
+            "worldPosition": [
+                95.54306541973023,
+                203.39352322829345,
+                -158.00949364321121
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "L_hip_GUIDE"
+        },
+        "L_hip_GUIDE": {
+            "worldPosition": [
+                34.012700863129474,
+                212.5258464873692,
+                -158.0094936432113
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "guides_GRP"
+        },
+        "R_backToe_GUIDE": {
+            "worldPosition": [
+                -31.012700863129474,
+                0.1285469734561424,
+                -121.73007937335738
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "R_backFoot_GUIDE"
+        },
+        "R_backFoot_GUIDE": {
+            "worldPosition": [
+                -31.012700863129474,
+                20.55721687225323,
+                -154.32412820340207
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "R_backAnkle_GUIDE"
+        },
+        "R_backAnkle_GUIDE": {
+            "worldPosition": [
+                -31.012700863129474,
+                32.31203270368019,
+                -159.29731951669808
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "R_backKnee_GUIDE"
+        },
+        "R_backKnee_GUIDE": {
+            "worldPosition": [
+                -31.012700863129474,
+                96.38579112235911,
+                -150.5040426951588
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "R_hip_GUIDE"
+        },
+        "R_backLegSettings_GUIDE": {
+            "worldPosition": [
+                -95.54306541973023,
+                203.39352322829345,
+                -158.00949364321121
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "R_hip_GUIDE"
+        },
+        "R_hip_GUIDE": {
+            "worldPosition": [
+                -34.012700863129474,
+                212.5258464873692,
+                -158.0094936432113
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "guides_GRP"
+        },
+        "C_spine02_GUIDE": {
+            "worldPosition": [
+                0.0,
+                244.3616300382107,
+                25.084018553619345
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "C_spine01_GUIDE"
+        },
+        "C_spine01_GUIDE": {
+            "worldPosition": [
+                0.0,
+                244.3616300382107,
+                -120.58697481948415
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "guides_GRP"
+        },
+        "C_localHip_GUIDE": {
+            "worldPosition": [
+                0.0,
+                212.5258464873692,
+                -158.0094936432113
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "guides_GRP"
+        },
+        "C_head_GUIDE": {
+            "worldPosition": [
+                0.0,
+                257.8853716557053,
+                160.56731364947362
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "C_neck_GUIDE"
+        },
+        "C_neck_GUIDE": {
+            "worldPosition": [
+                0.0,
+                248.37164820181928,
+                104.98690416287069
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "guides_GRP"
+        },
+        "L_backLegHeel_GUIDE": {
+            "worldPosition": [
+                29.393483048135856,
+                8.326672684688674e-17,
+                -181.2637897083756
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "L_backLegBankIn_GUIDE"
+        },
+        "L_backLegBankIn_GUIDE": {
+            "worldPosition": [
+                8.584434509277337,
+                0.0,
+                -154.32412820340232
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "L_backLegBankOut_GUIDE"
+        },
+        "L_backLegBankOut_GUIDE": {
+            "worldPosition": [
+                49.33882522583008,
+                0.0,
+                -154.32412820340232
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "guides_GRP"
+        },
+        "R_backLegHeel_GUIDE": {
+            "worldPosition": [
+                -29.393483048135856,
+                8.326672684688674e-17,
+                -181.2637897083756
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "R_backLegBankIn_GUIDE"
+        },
+        "R_backLegBankIn_GUIDE": {
+            "worldPosition": [
+                -8.584434509277337,
+                0.0,
+                -154.32412820340232
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "R_backLegBankOut_GUIDE"
+        },
+        "R_backLegBankOut_GUIDE": {
+            "worldPosition": [
+                -49.33882522583008,
+                0.0,
+                -154.32412820340232
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "guides_GRP"
+        },
+        "L_frontLegHeel_GUIDE": {
+            "worldPosition": [
+                32.33505653715047,
+                0.0,
+                37.422859009640796
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "L_frontLegBankIn_GUIDE"
+        },
+        "L_frontLegBankIn_GUIDE": {
+            "worldPosition": [
+                6.502266883850098,
+                0.0,
+                61.60123887209764
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "L_frontLegBankOut_GUIDE"
+        },
+        "L_frontLegBankOut_GUIDE": {
+            "worldPosition": [
+                49.06352233886719,
+                0.0,
+                61.60123887209764
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "guides_GRP"
+        },
+        "R_frontLegHeel_GUIDE": {
+            "worldPosition": [
+                -32.33505653715047,
+                0.0,
+                37.422859009640796
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "R_frontLegBankIn_GUIDE"
+        },
+        "R_frontLegBankIn_GUIDE": {
+            "worldPosition": [
+                -6.502266883850098,
+                0.0,
+                61.60123887209764
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "R_frontLegBankOut_GUIDE"
+        },
+        "R_frontLegBankOut_GUIDE": {
+            "worldPosition": [
+                -49.06352233886719,
+                0.0,
+                61.60123887209764
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "guides_GRP"
+        },
+        "C_trunkVariableFK015_GUIDE": {
+            "worldPosition": [
+                0.0,
+                -14.66443432617192,
+                228.28758239746094
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "C_trunkVariableFK014_GUIDE"
+        },
+        "C_trunkVariableFK014_GUIDE": {
+            "worldPosition": [
+                0.0,
+                0.05256567382808086,
+                228.28758239746094
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "C_trunkVariableFK013_GUIDE"
+        },
+        "C_trunkVariableFK013_GUIDE": {
+            "worldPosition": [
+                0.0,
+                14.769565673828081,
+                228.28758239746094
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "C_trunkVariableFK012_GUIDE"
+        },
+        "C_trunkVariableFK012_GUIDE": {
+            "worldPosition": [
+                0.0,
+                29.486565673828082,
+                228.28758239746094
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "C_trunkVariableFK011_GUIDE"
+        },
+        "C_trunkVariableFK011_GUIDE": {
+            "worldPosition": [
+                0.0,
+                44.20356567382808,
+                228.28758239746094
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "C_trunkVariableFK010_GUIDE"
+        },
+        "C_trunkVariableFK010_GUIDE": {
+            "worldPosition": [
+                0.0,
+                58.92056567382808,
+                228.28758239746094
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "C_trunkVariableFK009_GUIDE"
+        },
+        "C_trunkVariableFK009_GUIDE": {
+            "worldPosition": [
+                0.0,
+                73.63756567382808,
+                228.28758239746094
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "C_trunkVariableFK008_GUIDE"
+        },
+        "C_trunkVariableFK008_GUIDE": {
+            "worldPosition": [
+                0.0,
+                88.35456567382808,
+                228.28758239746094
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "C_trunkVariableFK007_GUIDE"
+        },
+        "C_trunkVariableFK007_GUIDE": {
+            "worldPosition": [
+                0.0,
+                103.07156567382808,
+                228.28758239746094
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "C_trunkVariableFK006_GUIDE"
+        },
+        "C_trunkVariableFK006_GUIDE": {
+            "worldPosition": [
+                0.0,
+                117.78856567382807,
+                228.28758239746094
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "C_trunkVariableFK005_GUIDE"
+        },
+        "C_trunkVariableFK005_GUIDE": {
+            "worldPosition": [
+                0.0,
+                132.50556567382807,
+                228.28758239746094
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "C_trunkVariableFK004_GUIDE"
+        },
+        "C_trunkVariableFK004_GUIDE": {
+            "worldPosition": [
+                0.0,
+                147.2225656738281,
+                228.28758239746094
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "C_trunkVariableFK003_GUIDE"
+        },
+        "C_trunkVariableFK003_GUIDE": {
+            "worldPosition": [
+                0.0,
+                161.9395656738281,
+                228.28758239746094
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "C_trunkVariableFK002_GUIDE"
+        },
+        "C_trunkVariableFK002_GUIDE": {
+            "worldPosition": [
+                0.0,
+                176.6565656738281,
+                228.28758239746094
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "C_trunkVariableFK001_GUIDE"
+        },
+        "C_trunkVariableFK001_GUIDE": {
+            "worldPosition": [
+                0.0,
+                191.37356567382812,
+                228.28758239746094
+            ],
+            "worldRotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "parent": "guides_GRP"
+        }
+    }
+}

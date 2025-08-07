@@ -12,9 +12,12 @@ from gg_autorig.utils import data_export
 # Dev only imports
 from gg_autorig.utils.guides import guides_manager
 import gg_autorig.utils.de_boors_core as de_boors
+from gg_autorig.utils import space_switch as ss
+
 
 reload(de_boors)
 reload(guides_manager)
+reload(ss)
 
 
 class LimbModule(object):
@@ -39,7 +42,6 @@ class LimbModule(object):
         self.skel_grp = self.data_exporter.get_data("basic_structure", "skel_GRP")
         self.masterWalk_ctl = self.data_exporter.get_data("basic_structure", "masterWalk_CTL")
         self.guides_grp = self.data_exporter.get_data("basic_structure", "guides_GRP")
-        self.skelHierarchy_grp = self.data_exporter.get_data("basic_structure", "skeletonHierarchy_GRP")
 
 
     def make(self):
@@ -93,6 +95,7 @@ class LimbModule(object):
         self.guides_matrix = [aim_matrix_guides[0], aim_matrix_guides[1], blend_matrix]
 
         self.fk_rig()
+
 
     def fk_rig(self):
         """
@@ -388,7 +391,7 @@ class LimbModule(object):
         if self.oriented_ik:
             cmds.addAttr(self.hand_ws_ik_ctl, shortName="OrientedController", niceName="Oriented Controller",attributeType="bool", keyable=False, defaultValue=False)
             cmds.setAttr(self.hand_ik_ctl+".visibility", lock=False)
-            cmds.setAttr(self.hand_ws_ik_ctl+".OrientedController", channelBox=True)
+            cmds.setAttr(self.hand_ws_ik_ctl+".OrientedController", channelBox=False)
 
             cmds.connectAttr(f"{self.hand_ws_ik_ctl}.OrientedController", f"{self.hand_ik_ctl}.visibility", force=True)
 
@@ -473,18 +476,17 @@ class LimbModule(object):
         This function sets up pair blends to switch between FK and IK controllers.
         """
 
-        self.switch_pos = guide_import(f"{self.side}_{self.module_name}Settings_GUIDE", all_descendents=False)[0]
 
         self.switch_ctl, self.switch_ctl_grp = controller_creator(
             name=f"{self.side}_{self.module_name}Switch",
             suffixes=["GRP"],
             lock=["tx","ty","tz","rx","ry","rz","sx", "sy", "sz", "visibility"],
             ro=False,
-            match=self.switch_pos,
             parent=self.individual_controllers_grp
         )
 
-        cmds.delete(self.switch_pos)
+        self.switch_pos = guide_import(f"{self.side}_{self.module_name}Settings_GUIDE", all_descendents=False)[0]
+        cmds.connectAttr(f"{self.switch_pos}.worldMatrix[0]", f"{self.switch_ctl_grp[0]}.offsetParentMatrix")
 
         cmds.addAttr(self.switch_ctl, shortName="switchIkFk", niceName="Switch IK --> FK", maxValue=1, minValue=0,defaultValue=self.default_ik, keyable=True)
         cmds.connectAttr(f"{self.switch_ctl}.switchIkFk", f"{self.fk_grps[0][0]}.visibility", force=True)
@@ -571,6 +573,16 @@ class LimbModule(object):
             
             
             self.blend_chain.append(joint)
+
+        curve = cmds.curve(p=[(0, 0, 0), (1, 0, 0)], d=1, name=f"{self.side}_{self.module_name}PvTrace_CRV")
+        cmds.setAttr(f"{curve}.overrideEnabled", 1)
+        cmds.setAttr(f"{curve}.overrideDisplayType", 1)
+        for i, joint in enumerate([self.blend_chain[1], self.pv_ik_ctl]):
+            decompose = cmds.createNode("decomposeMatrix", name=f"{self.side}_{self.module_name}IkFk0{i+1}_DCM", ss=True)
+            cmds.connectAttr(f"{joint}.worldMatrix[0]", f"{decompose}.inputMatrix")
+            cmds.connectAttr(f"{decompose}.outputTranslate", f"{curve}.controlPoints[{i}]")
+        cmds.setAttr(f"{curve}.inheritsTransform", 0)
+        cmds.parent(curve, self.ik_controllers)
 
         self.ik_soft_stretch_pin_elbow()
 
@@ -923,255 +935,8 @@ class LimbModule(object):
             self.bendy_ctls.append(ctl)
             self.bendy_ctls_grp.append(ctl_grp)
 
-
-
-
-
-    def bendy_twist(self, twist_number=5, degree=2, blend_chain=["L_shoulderDr_JNT", "L_elbowDr_JNT"], suffix=f"L_upperArm"):
-    
-        cvMatrices = [f"{driver}.worldMatrix[0]" for driver in blend_chain]
-
-        joints = []
-
-        for i in range(twist_number):
-            t = 0.95 if i == twist_number - 1 else i / (float(twist_number) - 1)
-            cmds.select(clear=True)
-            joint = cmds.joint(name=f"{suffix}0{i+1}_JNT", rad=0.5)
-            cmds.parent(joint, self.skinnging_grp)
-
-
-            pointMatrixWeights = de_boors.pointOnCurveWeights(cvMatrices, t, degree=degree)
-
-            pma_node = cmds.createNode('plusMinusAverage', name=f"{suffix}0{i+1}_PMA", ss=True)
-            cmds.setAttr(f"{pma_node}.operation", 1)
-
-            cube = cmds.polyCube(name=f"pJoint{i}_cube", width=1, height=1, depth=1)[0]   
-            cmds.parent(cube, joint)
-        
-            pointMatrixNode = cmds.createNode("wtAddMatrix", name=f"{suffix}0{i+1}_PMX", ss=True)
-            pointMatrix = f"{pointMatrixNode}.matrixSum"
-
-            # Scale preservation
-            for index, (matrix, weight) in enumerate(pointMatrixWeights):
-                md = cmds.createNode('multiplyDivide', name=f"{suffix}0{i+1}_MDV", ss=True)
-                cmds.setAttr(f"{md}.input2X", weight)
-                cmds.setAttr(f"{md}.input2Y", weight)
-                cmds.setAttr(f"{md}.input2Z", weight)
-                decomposeNode = cmds.createNode("decomposeMatrix", name=f"{suffix}Scale0{i+1}_DCM", ss=True)
-                cmds.connectAttr(f"{matrix}", f"{decomposeNode}.inputMatrix", force=True)
-                cmds.connectAttr(f"{decomposeNode}.outputScale", f"{md}.input1", force=True)               
-
-                cmds.connectAttr(f"{md}.output", f"{pma_node}.input3D[{index}]", force=True)
-
-            # Joint positioning
-            for index, (matrix, weight) in enumerate(pointMatrixWeights):
-                cmds.connectAttr(matrix, f"{pointMatrixNode}.wtMatrix[{index}].matrixIn")
-                float_constant = cmds.createNode("floatConstant", name=f"{suffix}Point0{i+1}_FLM", ss=True)
-                cmds.setAttr(f"{float_constant}.inFloat", weight)
-                cmds.connectAttr(f"{float_constant}.outFloat", f"{pointMatrixNode}.wtMatrix[{index}].weightIn", force=True)
-            
-            # Joint Tangent Matrix
-            tangentMatrixWeights = de_boors.tangentOnCurveWeights(cvMatrices, t, degree=degree)
-            
-            tangentMatrixNode = cmds.createNode("wtAddMatrix", name=f"{suffix}Tangent0{i+1}_WTADD", ss=True)
-            tangentMatrix = f"{tangentMatrixNode}.matrixSum"
-            for index, (matrix, weight) in enumerate(tangentMatrixWeights):
-                cmds.connectAttr(matrix, f"{tangentMatrixNode}.wtMatrix[{index}].matrixIn")
-                float_constant = cmds.createNode("floatConstant", name=f"{suffix}Tangent0{i+1}_FLM", ss=True)
-                cmds.setAttr(f"{float_constant}.inFloat", weight)
-                cmds.connectAttr(f"{float_constant}.outFloat", f"{tangentMatrixNode}.wtMatrix[{index}].weightIn", force=True)
-
-            aimMatrixNode = cmds.createNode("aimMatrix", name=f"{suffix}0{i+1}_AMX", ss=True)
-            cmds.connectAttr(pointMatrix, f"{aimMatrixNode}.inputMatrix")
-            cmds.connectAttr(tangentMatrix, f"{aimMatrixNode}.primaryTargetMatrix")
-            cmds.setAttr(f"{aimMatrixNode}.primaryMode", 1)
-            cmds.setAttr(f"{aimMatrixNode}.primaryInputAxis", *self.primary_aim)
-            cmds.setAttr(f"{aimMatrixNode}.secondaryInputAxis", *self.secondary_aim)
-            cmds.setAttr(f"{aimMatrixNode}.secondaryMode", 0)
-            aimMatrixOutput = f"{aimMatrixNode}.outputMatrix"
-
-            pickMatrixNode = cmds.createNode("pickMatrix", name=f"{suffix}0{i+1}_PKMX", ss=True)
-            cmds.connectAttr(aimMatrixOutput, f"{pickMatrixNode}.inputMatrix")
-            cmds.setAttr(f"{pickMatrixNode}.useScale", False)
-            cmds.setAttr(f"{pickMatrixNode}.useShear", False)
-            outputMatrix = f"{pickMatrixNode}.outputMatrix"
-
-            decomposeNode = cmds.createNode("decomposeMatrix", name=f"{suffix}0{i+1}_DCM", ss=True)
-            cmds.connectAttr(outputMatrix, f"{decomposeNode}.inputMatrix")
-
-            composeNode = cmds.createNode("composeMatrix", name=f"{suffix}0{i+1}_CPM", ss=True)
-            cmds.connectAttr(f"{decomposeNode}.outputTranslate", f"{composeNode}.inputTranslate")   
-            cmds.connectAttr(f"{decomposeNode}.outputRotate", f"{composeNode}.inputRotate")
-
-            cmds.connectAttr(f"{pma_node}.output3D", f"{composeNode}.inputScale", force=True)
-
-
-
-            cmds.connectAttr(f"{composeNode}.outputMatrix", f"{joint}.offsetParentMatrix")
-
-            
-
-            joints.append(joint)
-
-        if "Lower" in suffix:
-                cmds.select(clear=True)
-                joint = cmds.joint(name=f"{suffix}0{i+2}_JNT", rad=0.5)
-                cmds.parent(joint, self.skinnging_grp)
-                cube = cmds.polyCube(name=f"pJoint{i}_cube", width=1, height=1, depth=1)[0]   
-                cmds.parent(cube, joint)
-                cmds.connectAttr(f"{blend_chain[-1]}.worldMatrix[0]", f"{joint}.offsetParentMatrix")
-
-    def parented_chain(self, skinning_joints):
-
-        joints = []
-
-        for joint in skinning_joints:
-            cmds.select(clear=True)
-            joint_env = cmds.createNode("joint", n=joint.replace("_JNT", "_ENV"))
-
-            if joints:
-
-                cmds.parent(joint_env, joints[-1])
-
-            joints.append(joint_env)    
-
-        for i, joint in enumerate(joints):
-            
-            if i != 0:
-                mult_matrix = cmds.createNode("multMatrix", n=joint.replace("_ENV", "_MMX"), ss=True)
-                cmds.connectAttr(skinning_joints[i] + ".worldMatrix[0]", mult_matrix + ".matrixIn[0]", force=True)
-                cmds.connectAttr(joints[i-1] + ".worldInverseMatrix[0]", mult_matrix + ".matrixIn[1]", force=True)
-                cmds.connectAttr(mult_matrix + ".matrixSum", joint + ".offsetParentMatrix", force=True)
-
-                for attr in ["tx", "ty", "tz", "rx", "ry", "rz"]:
-                    cmds.setAttr(joint + "." + attr, 0)
-
-                
-
-            else:
-                cmds.connectAttr(skinning_joints[i] + ".worldMatrix[0]", joint + ".offsetParentMatrix", force=True)
-                cmds.parent(joint, self.skelHierarchy_grp)
-
-        return joints
-
-
-class ArmModule(LimbModule):
-    """
-    Class for moditifying limb module specific to arms.
-    Inherits from LimbModule.
-    """
-
-    def __init__(self, side):
-
-        super().__init__(side)
-
-        self.module_name = "arm"
-        self.first_joint = "shoulder"
-
-        self.oriented_ik = False
-
-        # Arm-specific setup
-        if self.side == "L":
-            self.primary_aim = (1, 0, 0)
-            self.secondary_aim = (0, 0, 1)
-            self.prefered_angle = (0, -1, 0)
-
-        elif self.side == "R":
-            self.primary_aim = (-1, 0, 0)
-            self.secondary_aim = (0, 0, -1)
-            self.prefered_angle = (0, -1, 0)
-
-        self.default_ik = 1
-
-    def make(self):
-        super().make()
-        skinning_joints = cmds.listRelatives(self.skinnging_grp)
-
-        env_joints = self.parented_chain(skinning_joints)
-
-        self.clavicle()
-
-        self.data_exporter.append_data(
-            f"{self.side}_{self.module_name}Module",
-            {
-                "env_joints": env_joints,
-                "fk_ctl": self.fk_ctls,
-                "pv_ctl": self.pv_ik_ctl,   
-                "root_ctl": self.root_ik_ctl,
-                "end_ik": self.hand_ws_ik_ctl,
-                "clavicle_ctl": self.clavicle_ctl,
-
-            }
-        )
-    def clavicle(self):
-        
-        clavicle_guide = guide_import(f"{self.side}_clavicle_GUIDE", all_descendents=False, path=None)[0]
-
-        aim_matrix = cmds.createNode("aimMatrix", name=f"{self.side}_clavicle_AMX", ss=True)
-        cmds.connectAttr(f"{clavicle_guide}.worldMatrix[0]", f"{aim_matrix}.inputMatrix")
-        cmds.connectAttr(f"{self.guides_matrix[0]}.outputMatrix", f"{aim_matrix}.primaryTargetMatrix")
-
-
-        self.clavicle_ctl, self.clavicle_ctl_grp = controller_creator(
-            name=f"{self.side}_clavicle",
-            suffixes=["GRP", "OFF", "ANM"],
-            lock=["sx", "sz", "sy", "visibility"],
-            ro=True,
-            parent=self.masterWalk_ctl
-        )
-
-        cmds.connectAttr(f"{aim_matrix}.outputMatrix", f"{self.clavicle_ctl_grp[0]}.offsetParentMatrix")
-
-
-class LegModule(LimbModule):
-    """
-    Class for moditifying limb module specific to legs.
-    Inherits from LimbModule.
-    """
-
-    def __init__(self, side):
-
-        super().__init__(side)
-
-        self.module_name = "leg"
-        self.first_joint = "hip"
-
-        self.oriented_ik = True
-
-
-        # Leg-specific setup
-        if self.side == "L":
-            self.primary_aim = (1, 0, 0)
-            self.secondary_aim = (0, 0, -1)
-            self.prefered_angle = (0, 1, 0)
-
-        elif self.side == "R":
-            self.primary_aim = (-1, 0, 0)
-            self.secondary_aim = (0, 0, 1)
-            self.prefered_angle = (0, 1, 0)
-
-        self.default_ik = 0
-
-
-
-    def make(self):
-        super().make()
         self.reverse_foot()
-        skinning_joints = cmds.listRelatives(self.skinnging_grp)
 
-        env_joints = self.parented_chain(skinning_joints)
-
-        self.data_exporter.append_data(
-            f"{self.side}_{self.module_name}Module",
-            {
-                "env_joints": env_joints,
-                "fk_ctl": self.fk_ctls,
-                "pv_ctl": self.pv_ik_ctl,
-                "root_ctl": self.root_ik_ctl,
-                "end_ik": self.hand_ws_ik_ctl,
-
-            }
-        )
 
     def reverse_foot(self):
         """
@@ -1217,7 +982,7 @@ class LegModule(LimbModule):
 
         # IK CONTROLLERS
 
-        self.leg_ik_guides = guide_import(f"{self.side}_bankOut_GUIDE", all_descendents=True, path=None)
+        self.leg_ik_guides = guide_import(f"{self.side}_{self.module_name}BankOut_GUIDE", all_descendents=True, path=None)
 
         self.ik_leg_guides = [f"{self.leg_ik_guides[0]}.worldMatrix[0]", f"{self.leg_ik_guides[1]}.worldMatrix[0]", f"{self.leg_ik_guides[2]}.worldMatrix[0]", self.leg_guides[1], self.leg_guides[0]]
 
@@ -1231,7 +996,7 @@ class LegModule(LimbModule):
             ctl, ctl_grp = controller_creator(
                 name=guide.replace("_GUIDE.worldMatrix[0]", "Ik"),
                 suffixes=["GRP", "SDK","ANM"],
-                lock=["sx","sz","sy","visibility"],
+                lock=["tx","tz","ty","sx","sz","sy","visibility"],
                 ro=True,
                 parent=self.ik_controllers
             )
@@ -1256,9 +1021,26 @@ class LegModule(LimbModule):
             self.reverse_ctl.append(ctl)
             self.reverse_ctl_grp.append(ctl_grp)
 
+        cmds.transformLimits(self.reverse_ctl[-1], rx=(0, 45), erx=(1, 0))
+
         cmds.parent(self.feet_joints[1], self.ik_chain[-1])
         cmds.parent(self.feet_joints[0], self.feet_joints[1])
         # IK HANDLE
+
+        self.frontRoll_ctl, self.frontRoll_grp = controller_creator(
+                name=f"{self.side}_{self.module_name}frontRoll",
+                suffixes=["GRP", "ANM"],
+                lock=["tx","tz","ty","sx","sz","sy","visibility"],
+                ro=True,
+                parent=self.reverse_ctl_grp[-2][0]
+            )
+
+        cmds.matchTransform(self.frontRoll_grp[0], self.feet_joints[1], pos=True, rot=True, scl=False)
+
+        relative_mmtx = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}FrontRollRelative_MMTX", ss=True)
+        cmds.connectAttr(f"{self.reverse_ctl[-2]}.worldMatrix[0]", f"{relative_mmtx}.matrixIn[0]")
+        cmds.connectAttr(f"{self.reverse_ctl_grp[-2][0]}.worldInverseMatrix[0]", f"{relative_mmtx}.matrixIn[1]")
+        cmds.connectAttr(f"{relative_mmtx}.matrixSum", f"{self.frontRoll_grp[0]}.offsetParentMatrix")
 
         self.ball_ik_handle = cmds.ikHandle(
             name=f"{self.side}_{self.module_name}Ball_IKH",
@@ -1283,7 +1065,22 @@ class LegModule(LimbModule):
             cmds.connectAttr(f"{float_constant}.outFloat", f"{ik_handle}.ty", force=True)
             cmds.connectAttr(f"{float_constant}.outFloat", f"{ik_handle}.tz", force=True)
 
-            cmds.connectAttr(f"{self.reverse_ctl[-1-i]}.worldMatrix[0]", f"{ik_handle}.offsetParentMatrix")
+        cmds.connectAttr(f"{self.reverse_ctl[-1]}.worldMatrix[0]", f"{self.ball_ik_handle}.offsetParentMatrix")
+
+        parent_matrix_ik = cmds.createNode("parentMatrix", name=f"{self.side}_{self.module_name}BallIkHandleParent_MTX", ss=True)
+        cmds.connectAttr(f"{self.reverse_ctl[-2]}.worldMatrix[0]", f"{parent_matrix_ik}.inputMatrix")
+        cmds.connectAttr(f"{self.frontRoll_ctl}.worldMatrix[0]", f"{parent_matrix_ik}.target[0].targetMatrix")
+        cmds.connectAttr(f"{parent_matrix_ik}.outputMatrix", f"{self.toe_ik_handle}.offsetParentMatrix", force=True)
+
+        child_dag = om.MSelectionList().add(self.reverse_ctl[-2]).getDagPath(0)
+        parent_dag = om.MSelectionList().add(self.frontRoll_ctl).getDagPath(0)
+        
+        child_world_matrix = child_dag.inclusiveMatrix()
+        parent_world_matrix = parent_dag.inclusiveMatrix()
+        
+        offset_matrix = child_world_matrix * parent_world_matrix.inverse()
+
+        cmds.setAttr(f"{parent_matrix_ik}.target[0].offsetMatrix", offset_matrix, type="matrix")
 
         connection = cmds.listConnections(f"{self.ikHandleManager}.offsetParentMatrix")[0]
 
@@ -1305,7 +1102,7 @@ class LegModule(LimbModule):
         cmds.addAttr(self.hand_ws_ik_ctl, shortName="reverseFoot", niceName="Reverse foot  ———", enumName="———",attributeType="enum", keyable=True)
         cmds.setAttr(self.hand_ws_ik_ctl+".reverseFoot", channelBox=True, lock=True)
         cmds.addAttr(self.hand_ws_ik_ctl, shortName="roll", niceName="Roll",defaultValue=0, keyable=True)
-        cmds.addAttr(self.hand_ws_ik_ctl, shortName="rollLiftAngle", niceName="Roll Lift Angle",minValue=0,defaultValue=45, keyable=True)
+        cmds.addAttr(self.hand_ws_ik_ctl, shortName="rollLiftAngle", niceName="Roll Lift Angle",minValue=0,defaultValue=0, keyable=True)
         cmds.addAttr(self.hand_ws_ik_ctl, shortName="rollStraightAngle", niceName="Roll Straight Angle",minValue=0,defaultValue=90, keyable=True)
         cmds.addAttr(self.hand_ws_ik_ctl, shortName="bank", niceName="Bank",defaultValue=0, keyable=True)
         cmds.addAttr(self.hand_ws_ik_ctl, shortName="ankleTwist", niceName="Ankle Twist",defaultValue=0, keyable=True)
@@ -1392,4 +1189,221 @@ class LegModule(LimbModule):
 
 
         self.blend_chain.append(joint)
+
+        skin_joints = cmds.listRelatives(self.skinnging_grp, type="joint", allDescendents=True)[0]
+
+        print(f"Skinning joints: {skin_joints}")
+
+        ss.fk_switch(self.switch_ctl, sources = [skin_joints])
+
+
+    def bendy_twist(self, twist_number=5, degree=2, blend_chain=["L_shoulderDr_JNT", "L_elbowDr_JNT"], suffix=f"L_upperArm"):
+    
+        cvMatrices = [f"{driver}.worldMatrix[0]" for driver in blend_chain]
+
+        joints = []
+
+        for i in range(twist_number):
+            t = 0.95 if i == twist_number - 1 else i / (float(twist_number) - 1)
+            cmds.select(clear=True)
+            joint = cmds.joint(name=f"{suffix}0{i+1}_JNT", rad=0.5)
+            cmds.parent(joint, self.skinnging_grp)
+
+
+            pointMatrixWeights = de_boors.pointOnCurveWeights(cvMatrices, t, degree=degree)
+
+            pma_node = cmds.createNode('plusMinusAverage', name=f"{suffix}0{i+1}_PMA", ss=True)
+            cmds.setAttr(f"{pma_node}.operation", 1)
+
+       
+            pointMatrixNode = cmds.createNode("wtAddMatrix", name=f"{suffix}0{i+1}_PMX", ss=True)
+            pointMatrix = f"{pointMatrixNode}.matrixSum"
+
+            # Scale preservation
+            for index, (matrix, weight) in enumerate(pointMatrixWeights):
+                md = cmds.createNode('multiplyDivide', name=f"{suffix}0{i+1}_MDV", ss=True)
+                cmds.setAttr(f"{md}.input2X", weight)
+                cmds.setAttr(f"{md}.input2Y", weight)
+                cmds.setAttr(f"{md}.input2Z", weight)
+                decomposeNode = cmds.createNode("decomposeMatrix", name=f"{suffix}Scale0{i+1}_DCM", ss=True)
+                cmds.connectAttr(f"{matrix}", f"{decomposeNode}.inputMatrix", force=True)
+                cmds.connectAttr(f"{decomposeNode}.outputScale", f"{md}.input1", force=True)               
+
+                cmds.connectAttr(f"{md}.output", f"{pma_node}.input3D[{index}]", force=True)
+
+            # Joint positioning
+            for index, (matrix, weight) in enumerate(pointMatrixWeights):
+                cmds.connectAttr(matrix, f"{pointMatrixNode}.wtMatrix[{index}].matrixIn")
+                float_constant = cmds.createNode("floatConstant", name=f"{suffix}Point0{i+1}_FLM", ss=True)
+                cmds.setAttr(f"{float_constant}.inFloat", weight)
+                cmds.connectAttr(f"{float_constant}.outFloat", f"{pointMatrixNode}.wtMatrix[{index}].weightIn", force=True)
+            
+            # Joint Tangent Matrix
+            tangentMatrixWeights = de_boors.tangentOnCurveWeights(cvMatrices, t, degree=degree)
+            
+            tangentMatrixNode = cmds.createNode("wtAddMatrix", name=f"{suffix}Tangent0{i+1}_WTADD", ss=True)
+            tangentMatrix = f"{tangentMatrixNode}.matrixSum"
+            for index, (matrix, weight) in enumerate(tangentMatrixWeights):
+                cmds.connectAttr(matrix, f"{tangentMatrixNode}.wtMatrix[{index}].matrixIn")
+                float_constant = cmds.createNode("floatConstant", name=f"{suffix}Tangent0{i+1}_FLM", ss=True)
+                cmds.setAttr(f"{float_constant}.inFloat", weight)
+                cmds.connectAttr(f"{float_constant}.outFloat", f"{tangentMatrixNode}.wtMatrix[{index}].weightIn", force=True)
+
+            aimMatrixNode = cmds.createNode("aimMatrix", name=f"{suffix}0{i+1}_AMX", ss=True)
+            cmds.connectAttr(pointMatrix, f"{aimMatrixNode}.inputMatrix")
+            cmds.connectAttr(tangentMatrix, f"{aimMatrixNode}.primaryTargetMatrix")
+            cmds.setAttr(f"{aimMatrixNode}.primaryMode", 1)
+            cmds.setAttr(f"{aimMatrixNode}.primaryInputAxis", *self.primary_aim)
+            cmds.setAttr(f"{aimMatrixNode}.secondaryInputAxis", *self.secondary_aim)
+            cmds.setAttr(f"{aimMatrixNode}.secondaryMode", 0)
+            aimMatrixOutput = f"{aimMatrixNode}.outputMatrix"
+
+            pickMatrixNode = cmds.createNode("pickMatrix", name=f"{suffix}0{i+1}_PKMX", ss=True)
+            cmds.connectAttr(aimMatrixOutput, f"{pickMatrixNode}.inputMatrix")
+            cmds.setAttr(f"{pickMatrixNode}.useScale", False)
+            cmds.setAttr(f"{pickMatrixNode}.useShear", False)
+            outputMatrix = f"{pickMatrixNode}.outputMatrix"
+
+            decomposeNode = cmds.createNode("decomposeMatrix", name=f"{suffix}0{i+1}_DCM", ss=True)
+            cmds.connectAttr(outputMatrix, f"{decomposeNode}.inputMatrix")
+
+            composeNode = cmds.createNode("composeMatrix", name=f"{suffix}0{i+1}_CPM", ss=True)
+            cmds.connectAttr(f"{decomposeNode}.outputTranslate", f"{composeNode}.inputTranslate")   
+            cmds.connectAttr(f"{decomposeNode}.outputRotate", f"{composeNode}.inputRotate")
+
+            cmds.connectAttr(f"{pma_node}.output3D", f"{composeNode}.inputScale", force=True)
+
+
+
+            cmds.connectAttr(f"{composeNode}.outputMatrix", f"{joint}.offsetParentMatrix")
+
+            
+
+            joints.append(joint)
+
+        if "Lower" in suffix:
+                cmds.select(clear=True)
+                joint = cmds.joint(name=f"{suffix}0{i+2}_JNT", rad=0.5)
+                cmds.parent(joint, self.skinnging_grp)
+                cmds.connectAttr(f"{blend_chain[-1]}.worldMatrix[0]", f"{joint}.offsetParentMatrix")
+
+
+class FrontLegModule(LimbModule):
+    """
+    Class for moditifying limb module specific to arms.
+    Inherits from LimbModule.
+    """
+
+    def __init__(self, side):
+
+        super().__init__(side)
+
+        self.module_name = "frontLeg"
+        self.first_joint = "shoulder"
+
+        self.oriented_ik = True
+
+        # Arm-specific setup
+        if self.side == "L":
+            self.primary_aim = (1, 0, 0)
+            self.secondary_aim = (0, 0, 1)
+            self.prefered_angle = (0, -1, 0)
+
+        elif self.side == "R":
+            self.primary_aim = (-1, 0, 0)
+            self.secondary_aim = (0, 0, -1)
+            self.prefered_angle = (0, -1, 0)
+
+        self.default_ik = 0
+
+    def make(self):
+        
+        super().make()
+        self.scapula()
+
+        self.data_exporter.append_data(
+            f"{self.side}_{self.module_name}Module",
+            {
+                "skinning_transform": self.skinnging_grp,
+                "fk_ctl": self.fk_ctls,
+                "pv_ctl": self.pv_ik_ctl,   
+                "root_ctl": self.root_ik_ctl,
+                "end_ik": self.hand_ws_ik_ctl,
+                "scapula_ctl": self.scapula_ctl,
+
+            }
+        )
+
+
+    def scapula(self):
+
+        scapula_guide = guide_import(f"{self.side}_scapula_GUIDE", all_descendents=False, path=None)[0]
+
+        # aim_matrix = cmds.createNode("aimMatrix", name=f"{self.side}_scapula_AMX", ss=True)
+        # cmds.connectAttr(f"{scapula_guide}.worldMatrix[0]", f"{aim_matrix}.inputMatrix")
+        # cmds.connectAttr(f"{self.guides_matrix[0]}.outputMatrix", f"{aim_matrix}.primaryTargetMatrix")
+
+        self.scapula_ctl, self.scapula_ctl_grp = controller_creator(
+            name=f"{self.side}_scapula",
+            suffixes=["GRP", "OFF", "ANM"],
+            lock=["sx", "sz", "sy", "visibility"],
+            ro=True,
+            parent=self.masterWalk_ctl
+        )
+
+        cmds.connectAttr(f"{scapula_guide}.worldMatrix[0]", f"{self.scapula_ctl_grp[0]}.offsetParentMatrix")
+
+        cmds.select(clear=True)
+        module_joint = cmds.joint(name=f"{self.side}_scapula_JNT", rad=0.5)
+        cmds.parent(module_joint, self.skinnging_grp)
+
+        cmds.connectAttr(f"{self.scapula_ctl}.worldMatrix[0]", f"{module_joint}.offsetParentMatrix")
+
+        cmds.reorder(module_joint, front=True)
+
+class BackLegModule(LimbModule):
+    """
+    Class for moditifying limb module specific to legs.
+    Inherits from LimbModule.
+    """
+
+    def __init__(self, side):
+
+        super().__init__(side)
+
+        self.module_name = "backLeg"
+        self.first_joint = "hip"
+
+        self.oriented_ik = True
+
+
+        # Leg-specific setup
+        if self.side == "L":
+            self.primary_aim = (1, 0, 0)
+            self.secondary_aim = (0, 0, -1)
+            self.prefered_angle = (0, 1, 0)
+
+        elif self.side == "R":
+            self.primary_aim = (-1, 0, 0)
+            self.secondary_aim = (0, 0, 1)
+            self.prefered_angle = (0, 1, 0)
+
+        self.default_ik = 0
+
+
+
+    def make(self):
+        super().make()
+
+        self.data_exporter.append_data(
+            f"{self.side}_{self.module_name}Module",
+            {
+                "skinning_transform": self.skinnging_grp,
+                "fk_ctl": self.fk_ctls,
+                "pv_ctl": self.pv_ik_ctl,
+                "root_ctl": self.root_ik_ctl,
+                "end_ik": self.hand_ws_ik_ctl,
+
+            }
+        )
 

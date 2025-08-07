@@ -15,7 +15,7 @@ def init_template_file(path=None, ext=".guides", export=True):
         complete_path = os.path.realpath(__file__)
         relative_path = complete_path.split("\scripts")[0]
         guides_dir = os.path.join(relative_path, folder[ext])
-        base_name = "body_template_"
+        base_name = "elephant_"
         # Find all files matching the pattern
         existing = [
             f for f in os.listdir(guides_dir)

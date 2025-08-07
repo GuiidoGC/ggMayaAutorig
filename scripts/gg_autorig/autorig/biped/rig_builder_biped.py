@@ -6,8 +6,12 @@ from gg_autorig.utils import data_export
 # from gg_autorig.utils.guides import guides_manager
 
 # Rig modules import
-from gg_autorig.autorig import limb_module as lbm
-from gg_autorig.autorig import spine_module as spm
+from gg_autorig.autorig.biped import limb_module as lbm
+from gg_autorig.autorig.biped import spine_module as spm
+from gg_autorig.autorig.biped import neck_module as nck
+from gg_autorig.autorig.biped import skeleton_hierarchy as skh
+from gg_autorig.utils import space_switch as ss
+
 
 
 # Python libraries import
@@ -20,6 +24,9 @@ reload(data_export)
 # reload(guides_manager)
 reload(lbm)
 reload(spm)
+reload(nck)
+reload(skh)
+reload(ss)
 
 def rename_ctl_shapes():
     """
@@ -64,10 +71,14 @@ def make():
     basic_structure.create_basic_structure(asset_name="BIPED_TEST")
 
     spm.SpineModule().make()
+    nck.NeckModule().make()
 
-    # for side in ["L"]:
+    # for side in ["L", "R"]:
     #     lbm.ArmModule(side=side).make()
     #     lbm.LegModule(side=side).make()
+
+    skeleton_hierarchy = skh.get_data()
+    ss.make_spaces()
 
     rename_ctl_shapes()
     joint_label()

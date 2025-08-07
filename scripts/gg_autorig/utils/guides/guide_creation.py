@@ -254,7 +254,11 @@ class GuideCreation(object):
         lock=["scaleX", "scaleY", "scaleZ", "visibility"]
         prefix="GUIDE"
 
+        
+
         ctl = self.build_curves_from_template(type=type, transform_name=f"{name}_{prefix}")[0]
+
+
 
         if not ctl:
             ctl = cmds.circle(name=f"{name}_{prefix}", ch=False)
@@ -272,15 +276,18 @@ class GuideCreation(object):
 
 
         for attr in lock:
+            if "scale" in attr:
+                try:
+                    cmds.connectAttr(f"{self.guides_trn}.guideScale", f"{ctl}.{attr}", force=True)
+                except:
+                    pass
             cmds.setAttr(f"{ctl}.{attr}", keyable=False, channelBox=False, lock=True)
 
-            return ctl
+        return ctl
 
     def create_guides(self, guides_trn, buffers_trn):
         self.guides_trn = guides_trn
         self.buffers_trn = buffers_trn
-
-
 
         for side in self.sides:
             color = {"L": 6, "R": 13}.get(side, 17)
@@ -409,6 +416,40 @@ class LegGuideCreation(GuideCreation):
         "legSettings": get_data("legSettings"),
     }
 
+class FrontLegGuideCreation(GuideCreation):
+    """
+    Guide creation for front legs.
+    """
+    sides = ["L", "R"]
+    limb_name = "frontLeg"
+    aim_name = "scapula"
+    aim_offset = -1
+    position_data = {
+        "scapula": get_data("scapula"),
+        "shoulder": get_data("shoulder"),
+        "frontKnee": get_data("frontKnee"),
+        "frontAnkle": get_data("frontAnkle"),
+        "frontFoot": get_data("frontFoot"),
+        "frontToe": get_data("frontToe"),
+        "frontLegSettings": get_data("frontLegSettings"),
+    }
+
+class BackLegGuideCreation(GuideCreation):
+    """
+    Guide creation for back legs.
+    """
+    sides = ["L", "R"]
+    limb_name = "backLeg"
+    aim_name = "hip"
+    aim_offset = -1
+    position_data = {
+        "hip": get_data("hip"),
+        "backKnee": get_data("backKnee"),
+        "backAnkle": get_data("backAnkle"),
+        "backFoot": get_data("backFoot"),
+        "backToe": get_data("backToe"),
+        "backLegSettings": get_data("backLegSettings"),
+    }
 
 class SpineGuideCreation(GuideCreation):
     """
@@ -487,8 +528,77 @@ class FootGuideCreation(GuideCreation):
         "heel": get_data("heel"),
     }
 
+class FrontFootGuideCreation(GuideCreation):
+    """
+    Guide creation for front feet.
+    """
+    sides = ["L", "R"]
+    limb_name = "frontFoot"
+    aim_name = None
+    aim_offset = 0
+    position_data = {
+        "frontLegBankOut": get_data("frontLegBankOut"),
+        "frontLegBankIn": get_data("frontLegBankIn"),
+        "frontLegHeel": get_data("frontLegHeel"),
+    }
 
-def rebuild_guides():
+class BackFootGuideCreation(GuideCreation):
+    """
+    Guide creation for back feet.
+    """
+    sides = ["L", "R"]
+    limb_name = "backFoot"
+    aim_name = None
+    aim_offset = 0
+    position_data = {
+        "backLegBankOut": get_data("backLegBankOut"),
+        "backLegBankIn": get_data("backLegBankIn"),
+        "backLegHeel": get_data("backLegHeel"),
+    }
+
+
+class VariableFK(GuideCreation):
+    """
+    Guide creation for variable FK.
+    """
+    limb_name = "variableFK"
+    aim_name = None
+    aim_offset = 0
+
+    def __init__(self, quantity=5, sides=["L", "R"], prefix="trunk"):
+        self.sides = sides
+        self.quantity = quantity
+        self.prefix = prefix
+
+        zero_value = 3 if quantity >= 10 else 2
+
+        self.position_data = {}
+
+
+        for i in range(self.quantity):
+
+            position_data = {
+                f"{self.prefix}VariableFK{str(i+1).zfill(zero_value)}": get_data(f"{self.prefix}VariableFK{str(i+1).zfill(zero_value)}"),
+            }
+            self.position_data.update(position_data)
+
+class JiggleJoint(GuideCreation):
+    """
+    Guide creation for jiggle joints.
+    """
+    sides = ["L", "R"]
+    limb_name = "jiggleJoint"
+    aim_name = None
+    aim_offset = 0
+
+    def __init__(self, prefix="tail"):
+        position_data = {
+            f"{prefix}JiggleJoint": get_data(f"{prefix}JiggleJoint"),
+
+        }
+        self.position_data.update(position_data)
+
+def biped_rebuild_guides():
     """
     Rebuilds the guides in the Maya scene.
     This function creates a new guides group and populates it with guides for arms, legs, spine, neck, hands, and feet.
@@ -499,6 +609,8 @@ def rebuild_guides():
     buffers_trn = cmds.createNode("transform", name="buffers_GRP", ss=True, parent=guides_trn)
 
 
+
+
     ArmGuideCreation().create_guides(guides_trn, buffers_trn)
     LegGuideCreation().create_guides(guides_trn, buffers_trn)
     SpineGuideCreation().create_guides(guides_trn, buffers_trn)
@@ -506,5 +618,28 @@ def rebuild_guides():
     HandGuideCreation().create_guides(guides_trn, buffers_trn)
     FootGuideCreation().create_guides(guides_trn, buffers_trn)
 
+def quadruped_rebuild_guides():
+    """
+    Rebuilds the guides for a quadruped character in the Maya scene.
+    This function creates a new guides group and populates it with guides for front legs, back legs, spine, neck, hands, and feet.
+    """
 
-# rebuild_guides()
+    guides_trn = cmds.createNode("transform", name="guides_GRP", ss=True)
+    buffers_trn = cmds.createNode("transform", name="buffers_GRP", ss=True, parent=guides_trn)
+
+
+
+    FrontLegGuideCreation().create_guides(guides_trn, buffers_trn)
+    BackLegGuideCreation().create_guides(guides_trn, buffers_trn)
+    SpineGuideCreation().create_guides(guides_trn, buffers_trn)
+    NeckGuideCreation().create_guides(guides_trn, buffers_trn)
+    BackFootGuideCreation().create_guides(guides_trn, buffers_trn)
+    FrontFootGuideCreation().create_guides(guides_trn, buffers_trn)
+    VariableFK(quantity=15, sides=["C"], prefix="trunk").create_guides(guides_trn, buffers_trn)
+    VariableFK(quantity=15, sides=["C"], prefix="tail").create_guides(guides_trn, buffers_trn)
+    JiggleJoint(quantity=15, sides=["C"], prefix="tail").create_guides(guides_trn, buffers_trn)
+
+
+
+# biped_rebuild_guides()
+# quadruped_rebuild_guides()

@@ -67,10 +67,10 @@ def create_basic_structure(asset_name = "assetName"):
             if subfolder.startswith("C_"):
 
                 lock_attrs = ["sx", "sy", "sz", "v"]
-                ro=False
+                ro=True
                 if "preferences" in subfolder:
                     lock_attrs += ["tx", "ty", "tz", "rx", "ry", "rz"]
-                    ro= True
+                    ro= False
 
                 ctl, grp = controller_creator(subfolder, ["GRP", "ANM"], lock=lock_attrs, ro=ro)
 
@@ -92,24 +92,31 @@ def create_basic_structure(asset_name = "assetName"):
                                                   "skeletonHierarchy_GRP": rig_transforms[4],})
 
 
-    cmds.addAttr(ctls[2], shortName="extraAttributesSep", niceName="EXTRA ATTRIBUTES_____", enumName="_____",attributeType="enum", keyable=False)
-    cmds.setAttr(ctls[2]+".extraAttributesSep", channelBox=True)
+    cmds.addAttr(ctls[2], shortName="extraAttr", niceName="Extra Attributes  ———", enumName="———",attributeType="enum", keyable=False)
+    cmds.setAttr(ctls[2]+".extraAttr", channelBox=True)
     cmds.addAttr(ctls[2], shortName="reference", niceName="Reference",attributeType="bool", keyable=False, defaultValue=True)
     cmds.setAttr(ctls[2]+".reference", channelBox=True)
-
-    cmds.addAttr(ctls[2], shortName="showModules", niceName="Show Modules",attributeType="bool", keyable=False, defaultValue=True)
-    cmds.addAttr(ctls[2], shortName="showSkeleton", niceName="Show Skeleton",attributeType="bool", keyable=False, defaultValue=True)
-    cmds.addAttr(ctls[2], shortName="showJoints", niceName="Show Joints",attributeType="bool", keyable=False, defaultValue=True)
     cmds.addAttr(ctls[2], shortName="meshLods", niceName="LODS", enumName="SKELETON:PROXY:MODEL",attributeType="enum", keyable=False)
+    cmds.addAttr(ctls[2], shortName="hideControllersOnPlayblast", niceName="Hide Controllers On Playblast",attributeType="bool", keyable=False, defaultValue=False)
+
+    cmds.addAttr(ctls[2], shortName="extraVisibility", niceName="Extra Visibility  ———", enumName="———",attributeType="enum", keyable=False)
+    cmds.setAttr(ctls[2]+".extraVisibility", channelBox=True)
+    cmds.addAttr(ctls[2], shortName="showModules", niceName="Show Modules",attributeType="bool", keyable=False, defaultValue=False)
+    cmds.addAttr(ctls[2], shortName="showSkeleton", niceName="Show Skeleton",attributeType="bool", keyable=False, defaultValue=True)
+    cmds.addAttr(ctls[2], shortName="showJoints", niceName="Show Joints",attributeType="bool", keyable=False, defaultValue=False)
     cmds.setAttr(ctls[2]+".showModules", channelBox=True)
     cmds.setAttr(ctls[2]+".showSkeleton", channelBox=True)
     cmds.setAttr(ctls[2]+".showJoints", channelBox=True)
     cmds.setAttr(ctls[2]+".meshLods", channelBox=True)
+    cmds.setAttr(ctls[2]+".hideControllersOnPlayblast", channelBox=True)
+
+    # Connect hideControllersOnPlayblast to controls_GRP.drawOverride.hideOnPlayback
+    cmds.connectAttr(f"{ctls[2]}.hideControllersOnPlayblast", f"{secondary_transforms[0]}.hideOnPlayback")
 
     cmds.setAttr(secondary_transforms[2]+".overrideDisplayType", 2)
     cmds.connectAttr(ctls[2]+".reference", secondary_transforms[2]+".overrideEnabled")
         
-    cmds.addAttr(ctls[1], shortName="extraAttributesSep", niceName="EXTRA ATTRIBUTES_____", enumName="_____",attributeType="enum", keyable=True)
+    cmds.addAttr(ctls[1], shortName="extraAttributesSep", niceName="Extra Attributes  ———", enumName="———",attributeType="enum", keyable=True)
     cmds.addAttr(ctls[1], shortName="globalScale", niceName="Global Scale", minValue=0.001,defaultValue=1, keyable=True)
     cmds.setAttr(ctls[1]+".extraAttributesSep", channelBox=True, lock=True)
 
