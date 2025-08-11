@@ -2,7 +2,7 @@ import maya.utils as mu
 import maya.cmds as cmds
 
 """
-This script sets up the Maya environment by creating command ports and loading the Puiastre Productions UI.
+This script sets up the Maya environment by creating command ports and loading the ToolBox UI.
 It also executes a deferred command to load the UI after Maya has fully initialized.
 """
 

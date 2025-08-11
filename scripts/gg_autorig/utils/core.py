@@ -1,7 +1,7 @@
 import os
 import maya.cmds as cmds
 
-def init_template_file(path=None, ext=".guides", export=True):
+def init_template_file(path=None, file_name = "test_", ext=".guides", export=True):
     """
     Initializes the TEMPLATE_FILE variable.
     If a path is provided, it sets TEMPLATE_FILE to that path.
@@ -11,25 +11,28 @@ def init_template_file(path=None, ext=".guides", export=True):
     if path:
         TEMPLATE_FILE = path
     else:
-        folder= {".guides": "guides", ".ctls": "curves"}
-        complete_path = os.path.realpath(__file__)
-        relative_path = complete_path.split("\scripts")[0]
-        guides_dir = os.path.join(relative_path, folder[ext])
-        base_name = "elephant_"
-        # Find all files matching the pattern
-        existing = [
-            f for f in os.listdir(guides_dir)
-            if f.startswith(base_name) and f.endswith(ext)
-        ]
-        max_num = 1
-        for f in existing:
-            try:
-                num = int(f[len(base_name):len(base_name)+2])
-                if num > max_num:
-                    max_num = num
-            except ValueError:
-                continue
-        default_template = os.path.join(guides_dir, f"{base_name}{max_num:02d}{ext}")
+        if not os.path.isabs(file_name):
+            folder= {".guides": "guides", ".ctls": "curves"}
+            complete_path = os.path.realpath(__file__)
+            relative_path = complete_path.split("\scripts")[0]
+            guides_dir = os.path.join(relative_path, folder[ext])
+            base_name = file_name
+            # Find all files matching the pattern
+            existing = [
+                f for f in os.listdir(guides_dir)
+                if f.startswith(base_name) and f.endswith(ext)
+            ]
+            max_num = 1
+            for f in existing:
+                try:
+                    num = int(f[len(base_name):len(base_name)+2])
+                    if num > max_num:
+                        max_num = num
+                except ValueError:
+                    continue
+            default_template = os.path.join(guides_dir, f"{base_name}{max_num:02d}{ext}")
+        else:
+            default_template = file_name
         if export:
             if os.path.exists(default_template):
                 result = cmds.confirmDialog(

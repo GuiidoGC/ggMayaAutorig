@@ -7,12 +7,13 @@ from gg_autorig.utils import data_export
 from importlib import reload
 reload(core)
 
-def guides_export(file_name=None):
+def guides_export(file_name = None, skelTree = None):
         """
         Exports the guides from the selected folder in the Maya scene to a JSON file.
         """
+        file_name = file_name or "body_template"
 
-        TEMPLATE_FILE = core.init_template_file(ext=".guides")
+        TEMPLATE_FILE = core.init_template_file(ext=".guides", file_name=f"{file_name}_")
         print(f"Exporting guides to {TEMPLATE_FILE}")
         
         guides_folder = cmds.ls(sl=True) or cmds.ls("guides_GRP", type="transform")
@@ -28,9 +29,36 @@ def guides_export(file_name=None):
                         om.MGlobal.displayError("No guides found in the scene.")
                         return
 
-                guides_get_rotation = [cmds.xform(guide, q=True, ws=True, rotation=True) for guide in guides_descendents]
                 guides_get_translation = [cmds.xform(guide, q=True, ws=True, translation=True) for guide in guides_descendents]
                 guides_parents = [cmds.listRelatives(guide, parent=True)[0] for guide in guides_descendents]
+                guides_joint_twist = []
+                guides_type = []
+                guides_module_name = []
+
+                for guide in guides_descendents:
+                        # Try to get 'jointTwist' attribute, if not present, set value as 'Child'
+                        if cmds.attributeQuery("jointTwist", node=guide, exists=True):
+                                joint_twist = cmds.getAttr(f"{guide}.jointTwist")
+                        else:
+                                joint_twist = "Child"
+                        guides_joint_twist.append(joint_twist)
+
+                        # Try to get 'type' attribute, if not present, set value as 'Child'
+                        if cmds.attributeQuery("type", node=guide, exists=True):
+                                guide_type = cmds.getAttr(f"{guide}.type")
+                        else:
+                                guide_type = "Child"
+                        guides_type.append(guide_type)
+
+                        # Try to get 'moduleName' attribute, if not present, set value as 'Child'
+                        if cmds.attributeQuery("moduleName", node=guide, exists=True):
+                                index = cmds.getAttr(f"{guide}.moduleName")
+                                enum_string = cmds.addAttr(f"{guide}.moduleName", q=True, en=True)
+                                enum_list = enum_string.split(":")
+                                module_name = enum_list[index]  
+                        else:
+                                module_name = "Child"
+                        guides_module_name.append(module_name)
 
 
 
@@ -40,13 +68,17 @@ def guides_export(file_name=None):
         
         guides_name = os.path.splitext(os.path.basename(TEMPLATE_FILE))[0]
 
-        guides_data = {guides_name: {}}
+        guides_data = {guides_name: {},
+                       "hierarchy": skelTree
+                       }
 
         for i, guide in enumerate(guides_descendents):
                 guides_data[guides_name][guide] = {
                         "worldPosition": guides_get_translation[i],
-                        "worldRotation": guides_get_rotation[i],
                         "parent": guides_parents[i],
+                        "jointTwist": guides_joint_twist[i],
+                        "type": guides_type[i],
+                        "moduleName": guides_module_name[i]
                 }
 
 
@@ -138,67 +170,5 @@ def guide_import(joint_name, all_descendents=True, path=None):
                 transforms_chain_export.append(guide_transform)
 
         return transforms_chain_export
-
-
-
-
                
-
-
-
-
-
-        # for main_joint_name, data in guides_data[name].items():
-        #                 if main_joint_name == joint_name:
-        #                                 cmds.select(clear=True) 
-        #                                 if "isLocator" in data and data["isLocator"]:
-        #                                         return data["worldPosition"], data["worldRotation"]
-        #                                 else:
-        #                                         main_joint = cmds.joint(name=main_joint_name, rad=50)
-        #                                 cmds.setAttr(f"{main_joint}.translate", data["worldPosition"][0], data["worldPosition"][1], data["worldPosition"][2])
-        #                                 cmds.setAttr(f"{main_joint}.rotate", data["worldRotation"][0], data["worldRotation"][1], data["worldRotation"][2])
-        #                                 cmds.makeIdentity(main_joint, apply=True, r=True)
-        #                                 cmds.setAttr(f"{main_joint}.preferredAngle", data["preferredAngle"][0], data["preferredAngle"][1], data["preferredAngle"][2])
-        #                                 joints_chain.append(main_joint_name)
-        #                                 break
-
-
-                
-        # cmds.select(clear=True)
-        # if joints_chain:
-        #         return joints_chain
-        
-
-def fk_chain_import():
-        """
-        Finds all guide names containing 'FK' that either have no parent or their parent is 'C_guides_GRP'.
-        Returns:
-                list: List of FK guide names matching the criteria.
-        """
-        if not TEMPLATE_FILE:
-                complete_path = os.path.realpath(__file__)
-                relative_path = complete_path.split("\scripts")[0]
-                guides_path = os.path.join(relative_path, "guides")
-                # Find the first .guides file in the directory
-                guide_files = [f for f in os.listdir(guides_path) if f.endswith('.guides')]
-                if not guide_files:
-                        om.MGlobal.displayError("No .guides files found in guides directory.")
-                        return []
-                file_path = os.path.join(guides_path, guide_files[0])
-        else:
-                file_path = os.path.normpath(TEMPLATE_FILE)
-
-        with open(file_path, "r") as infile:
-                guides_data = json.load(infile)
-
-        # Get the main key (guide set name)
-        guide_set_name = next(iter(guides_data))
-        fk_guides = []
-        for guide_name, data in guides_data[guide_set_name].items():
-                if "FK" in guide_name:
-                        parent = data.get("parent")
-                        if not parent or parent == "C_guides_GRP":
-                                fk_guides.append(guide_name)
-        return fk_guides
-                
 # guides_export()
