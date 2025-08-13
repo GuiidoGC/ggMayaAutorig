@@ -250,7 +250,6 @@ class GuideCreation(object):
 
         return created_transforms
 
-
     def controller_creator(self,name, type, parent=None, match=None, color=6):
         """
         Creates a controller with a specific name and offset transforms and returns the controller and the groups.
@@ -343,10 +342,26 @@ class GuideCreation(object):
             enum_name = ":".join(self.guides)
             cmds.addAttr(self.guides[0], longName="guide_name", attributeType="enum", enumName=enum_name, keyable=False)
 
+            meta = []
 
             for i in range(len(self.guides) - 1):
                 if "Settings" in self.guides[i+1] or "localHip" in self.guides[i+1]:
                     continue
+                if "metacarpal" in self.guides[i] or "Metacarpal" in self.guides[i]:
+                    print("meta feo")
+                    if cmds.listRelatives(self.guides[i], parent=True) != [self.guides[0]]:
+                        cmds.parent(self.guides[i], self.guides[0])
+                    curve = cmds.curve(d=1, p=[(1, 0, 0), (2, 0, 0)], n=f"{self.guides[i]}_to_{self.guides[0]}_CRV")
+                    dcmp = cmds.createNode("decomposeMatrix", name=f"{self.guides[i]}_to_{self.guides[0]}{i}_DCM", ss=True)
+                    dcmp02 = cmds.createNode("decomposeMatrix", name=f"{self.guides[i]}_to_{self.guides[0]}{i+1}_DCM", ss=True)
+                    cmds.connectAttr(self.guides[i] + ".worldMatrix[0]", dcmp + ".inputMatrix")
+                    cmds.connectAttr(self.guides[0] + ".worldMatrix[0]", dcmp02 + ".inputMatrix")
+                    cmds.connectAttr(dcmp + ".outputTranslate", curve + ".controlPoints[0]")
+                    cmds.connectAttr(dcmp02 + ".outputTranslate", curve + ".controlPoints[1]")
+                    cmds.parent(curve, self.buffers_trn)
+                    cmds.setAttr(curve + ".overrideEnabled", 1)
+                    cmds.setAttr(curve + ".overrideDisplayType", 1)
+
                 if not "metacarpal" in self.guides[i+1]:
                     curve = cmds.curve(d=1, p=[(1, 0, 0), (2, 0, 0)], n=f"{self.guides[i]}_to_{self.guides[i + 1]}_CRV")
                     dcmp = cmds.createNode("decomposeMatrix", name=f"{self.guides[i]}_to_{self.guides[i + 1]}{i}_DCM", ss=True)
@@ -358,9 +373,7 @@ class GuideCreation(object):
                     cmds.parent(curve, self.buffers_trn)
                     cmds.setAttr(curve + ".overrideEnabled", 1)
                     cmds.setAttr(curve + ".overrideDisplayType", 1)
-                if "metacarpal" in self.guides[i]:
-                    if cmds.listRelatives(self.guides[i], parent=True) != [self.guides_trn]:
-                        cmds.parent(self.guides[i], self.guides_trn)
+                
                     
 
 
@@ -394,7 +407,7 @@ def get_data(name, file_name=None):
     if not file_name or file_name == "_":
         file_name = "body_template_"
 
-    # final_path = core.init_template_file(ext=".guides", export=False, file_name=file_name)
+    # final_path = core.init_template_file(ext=".guides", export=False)
     final_path = core.init_template_file(ext=".guides", export=False)
 
     try:
@@ -417,25 +430,25 @@ class ArmGuideCreation(GuideCreation):
     """
     Guide creation for arms.
     """
-    def __init__(self, side = "L", twist_joints=5, file_name = "body_template_"):
+    def __init__(self, side = "L", twist_joints=5):
         self.sides = side
         self.twist_joints = twist_joints
         self.limb_name = "arm"
         self.aim_name = "shoulder"
         self.aim_offset = 0
         self.position_data = {
-            "clavicle": get_data(f"{self.sides}_clavicle", file_name=file_name),
-            "shoulder": get_data(f"{self.sides}_shoulder", file_name=file_name),
-            "elbow": get_data(f"{self.sides}_elbow", file_name=file_name),
-            "wrist": get_data(f"{self.sides}_wrist", file_name=file_name),
-            "armSettings": get_data(f"{self.sides}_armSettings", file_name=file_name),
+            "clavicle": get_data(f"{self.sides}_clavicle"),
+            "shoulder": get_data(f"{self.sides}_shoulder"),
+            "elbow": get_data(f"{self.sides}_elbow"),
+            "wrist": get_data(f"{self.sides}_wrist"),
+            "armSettings": get_data(f"{self.sides}_armSettings"),
         }
 
 class LegGuideCreation(GuideCreation):
     """
     Guide creation for legs.
     """
-    def __init__(self, side = "L", twist_joints=5, file_name = "body_template_"):
+    def __init__(self, side = "L", twist_joints=5):
         self.sides = side
         self.twist_joints = twist_joints
         self.limb_name = "leg"
@@ -454,7 +467,7 @@ class FrontLegGuideCreation(GuideCreation):
     """
     Guide creation for front legs.
     """
-    def __init__(self, side = "L", twist_joints=5, file_name = "body_template_"):
+    def __init__(self, side = "L", twist_joints=5):
         self.sides = side
         self.twist_joints = twist_joints
         self.limb_name = "frontLeg"
@@ -474,7 +487,7 @@ class BackLegGuideCreation(GuideCreation):
     """
     Guide creation for back legs.
     """
-    def __init__(self, side = "L", twist_joints=5, file_name = "body_template_"):
+    def __init__(self, side = "L", twist_joints=5):
         self.sides = side
         self.twist_joints = twist_joints
         self.limb_name = "backLeg"
@@ -493,7 +506,7 @@ class SpineGuideCreation(GuideCreation):
     """
     Guide creation for spine.
     """
-    def __init__(self, side = "C", twist_joints=5,type="biped", file_name = "body_template_"):
+    def __init__(self, side = "C", twist_joints=5,type="biped"):
         self.sides = side
         self.twist_joints = twist_joints
         self.type = type
@@ -509,7 +522,7 @@ class NeckGuideCreation(GuideCreation):
     """
     Guide creation for neck.
     """
-    def __init__(self, side = "C", twist_joints=5, type=0, file_name = "body_template_"):
+    def __init__(self, side = "C", twist_joints=5, type=0):
         self.sides = side
         self.type = type
         self.twist_joints = twist_joints
@@ -520,41 +533,93 @@ class NeckGuideCreation(GuideCreation):
             "head": get_data(f"{self.sides}_head"),
         }
 
+def number_to_ordinal_word(n):
+    base_ordinal = {
+        1: 'first', 2: 'second', 3: 'third', 4: 'fourth', 5: 'fifth',
+        6: 'sixth', 7: 'seventh', 8: 'eighth', 9: 'ninth', 10: 'tenth',
+        11: 'eleventh', 12: 'twelfth', 13: 'thirteenth', 14: 'fourteenth',
+        15: 'fifteenth', 16: 'sixteenth', 17: 'seventeenth', 18: 'eighteenth',
+        19: 'nineteenth'
+    }
+    tens = {
+        20: 'twentieth', 30: 'thirtieth', 40: 'fortieth',
+        50: 'fiftieth', 60: 'sixtieth', 70: 'seventieth',
+        80: 'eightieth', 90: 'ninetieth'
+    }
+    tens_prefix = {
+        20: 'twenty', 30: 'thirty', 40: 'forty', 50: 'fifty',
+        60: 'sixty', 70: 'seventy', 80: 'eighty', 90: 'ninety'
+    }
+    if n <= 19:
+        return base_ordinal[n]
+    elif n in tens:
+        return tens[n]
+    elif n < 100:
+        ten = (n // 10) * 10
+        unit = n % 10
+        return tens_prefix[ten] + "-" + base_ordinal[unit]
+    else:
+        return str(n)
+
+
 class HandGuideCreation(GuideCreation):
     """
     Guide creation for hands.
     """
-    def __init__(self, side = "L", file_name = "body_template_"):
+    def __init__(self, side = "L", controller_number = 5):
         self.sides = side
         self.limb_name = "hand"
         self.aim_name = None
-        self.aim_offset = 0
-        self.position_data = {
-            "metacarpalIndex": get_data(f"{self.sides}_metacarpalIndex"),
-            "index01": get_data(f"{self.sides}_index01"),
-            "index02": get_data(f"{self.sides}_index02"),
-            "index03": get_data(f"{self.sides}_index03"),
-            "indexEnd": get_data(f"{self.sides}_indexEnd"),
-            "metacarpalMiddle": get_data(f"{self.sides}_metacarpalMiddle"),
-            "middle01": get_data(f"{self.sides}_middle01"),
-            "middle02": get_data(f"{self.sides}_middle02"),
-            "middle03": get_data(f"{self.sides}_middle03"),
-            "middleEnd": get_data(f"{self.sides}_middleEnd"),
-            "metacarpalRing": get_data(f"{self.sides}_metacarpalRing"),
-            "ring01": get_data(f"{self.sides}_ring01"),
-            "ring02": get_data(f"{self.sides}_ring02"),
-            "ring03": get_data(f"{self.sides}_ring03"),
-            "ringEnd": get_data(f"{self.sides}_ringEnd"),
-            "metacarpalPinky": get_data(f"{self.sides}_metacarpalPinky"),
-            "pinky01": get_data(f"{self.sides}_pinky01"),
-            "pinky02": get_data(f"{self.sides}_pinky02"),
-            "pinky03": get_data(f"{self.sides}_pinky03"),
-            "pinkyEnd": get_data(f"{self.sides}_pinkyEnd"),
-            "metacarpalThumb": get_data(f"{self.sides}_metacarpalThumb"),
-            "thumb01": get_data(f"{self.sides}_thumb01"),
-            "thumb02": get_data(f"{self.sides}_thumb02"),
-            "thumbEnd": get_data(f"{self.sides}_thumbEnd"),
-        }
+        self.aim_offset = 1
+        if controller_number == 5:
+            self.position_data = {
+                "hand": get_data(f"{self.sides}_hand"),
+                "metacarpalIndex": get_data(f"{self.sides}_metacarpalIndex"),
+                "index01": get_data(f"{self.sides}_index01"),
+                "index02": get_data(f"{self.sides}_index02"),
+                "index03": get_data(f"{self.sides}_index03"),
+                "indexEnd": get_data(f"{self.sides}_indexEnd"),
+                "metacarpalMiddle": get_data(f"{self.sides}_metacarpalMiddle"),
+                "middle01": get_data(f"{self.sides}_middle01"),
+                "middle02": get_data(f"{self.sides}_middle02"),
+                "middle03": get_data(f"{self.sides}_middle03"),
+                "middleEnd": get_data(f"{self.sides}_middleEnd"),
+                "metacarpalRing": get_data(f"{self.sides}_metacarpalRing"),
+                "ring01": get_data(f"{self.sides}_ring01"),
+                "ring02": get_data(f"{self.sides}_ring02"),
+                "ring03": get_data(f"{self.sides}_ring03"),
+                "ringEnd": get_data(f"{self.sides}_ringEnd"),
+                "metacarpalPinky": get_data(f"{self.sides}_metacarpalPinky"),
+                "pinky01": get_data(f"{self.sides}_pinky01"),
+                "pinky02": get_data(f"{self.sides}_pinky02"),
+                "pinky03": get_data(f"{self.sides}_pinky03"),
+                "pinkyEnd": get_data(f"{self.sides}_pinkyEnd"),
+                "metacarpalThumb": get_data(f"{self.sides}_metacarpalThumb"),
+                "thumb01": get_data(f"{self.sides}_thumb01"),
+                "thumb02": get_data(f"{self.sides}_thumb02"),
+                "thumbEnd": get_data(f"{self.sides}_thumbEnd"),
+            }
+        else:
+            self.position_data = {
+                "hand": get_data(f"{self.sides}_hand"),
+            }
+            for item in range(int(controller_number)):
+                name = number_to_ordinal_word(item + 1)
+                if name == "first":
+                    self.position_data.update({
+                        f"{name}Metacarpal": get_data(f"{self.sides}_{name}Metacarpal"),
+                        f"{name}Finger01": get_data(f"{self.sides}_{name}Finger01"),
+                        f"{name}Finger02": get_data(f"{self.sides}_{name}Finger02"),
+                        f"{name}FingerEnd": get_data(f"{self.sides}_{name}FingerEnd"),
+                    })
+                else:
+                    self.position_data.update({
+                        f"{name}Metacarpal": get_data(f"{self.sides}_{name}Metacarpal"),
+                        f"{name}Finger01": get_data(f"{self.sides}_{name}Finger01"),
+                        f"{name}Finger02": get_data(f"{self.sides}_{name}Finger02"),
+                        f"{name}Finger03": get_data(f"{self.sides}_{name}Finger03"),
+                        f"{name}FingerEnd": get_data(f"{self.sides}_{name}FingerEnd"),
+                    })
 
 class FootGuideCreation(GuideCreation):
     """

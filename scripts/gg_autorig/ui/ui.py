@@ -125,7 +125,7 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         self.module_library.setTitle("Module Library")
 
         self.module_list = QtWidgets.QListWidget()        
-        self.module_list.addItems(["Arm Module", "Front Leg Module", "Leg Module", "Back Leg Module", "Spine Module", "Neck Module"])
+        self.module_list.addItems(["Arm Module", "Front Leg Module", "Leg Module", "Back Leg Module", "Spine Module", "Neck Module", "Hand Module"])
 
         self.extra_module_library = QtWidgets.QGroupBox()
         self.extra_module_library.setTitle("Extra Module Library")
@@ -146,6 +146,14 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         self.twist_input.setSingleStep(1)
         self.twist_input.setValue(5)
 
+        self.controllers_num = QtWidgets.QLabel("Number of controllers:")
+        self.controllers_num_input = QtWidgets.QDoubleSpinBox()
+        self.controllers_num_input.setDecimals(0)
+        self.controllers_num_input.setMinimum(1)
+        self.controllers_num_input.setMaximum(100)
+        self.controllers_num_input.setSingleStep(1)
+        self.controllers_num_input.setValue(5)
+
         self.side_label = QtWidgets.QLabel("Side:")
         self.side_combo = QtWidgets.QComboBox()
         self.side_combo.addItems(["Left", "Right", "Center"])
@@ -153,6 +161,8 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         self.biped_radio = QtWidgets.QRadioButton("Biped")
         self.quadruped_radio = QtWidgets.QRadioButton("Quadruped")
         self.biped_radio.setChecked(True)
+
+
 
         self.rig_type_group = QtWidgets.QButtonGroup()
         self.rig_type_group.addButton(self.biped_radio)
@@ -291,12 +301,17 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         self.rig_type_layout.addWidget(self.biped_radio)
         self.rig_type_layout.addWidget(self.quadruped_radio)
 
+        controllers_quantity_h_layout = QtWidgets.QHBoxLayout()
+        controllers_quantity_h_layout.addWidget(self.controllers_num)
+        controllers_quantity_h_layout.addWidget(self.controllers_num_input)
+
         settings_layout = QtWidgets.QVBoxLayout()
         settings_layout.addWidget(self.module_name_settings, alignment=QtCore.Qt.AlignCenter)
         settings_layout.setSpacing(20)
         settings_layout.addLayout(twist_joints_layout)
         settings_layout.addLayout(side_layout)  
         settings_layout.addLayout(self.rig_type_layout)
+        settings_layout.addLayout(controllers_quantity_h_layout)
         settings_layout.addStretch()
         settings_layout.addWidget(self.add_guides_button, alignment=QtCore.Qt.AlignCenter)
         settings_layout.addStretch()
@@ -418,11 +433,16 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
                     type_name = None
                     joint_twist = None
                     foot_module = None
+                    controller_number = None
+                    original_module = f"{side}_{attr}_GUIDE"
                     try:
                         joint_twist = cmds.getAttr(f"{item}.jointTwist")
                     except Exception as e:
                         pass
-
+                    try:
+                        controller_number = cmds.getAttr(f"{item}.controllerNumber")
+                    except Exception as e:
+                        pass
                     try:
                         type_enum = cmds.attributeQuery("type", node=item, listEnum=True)[0]
                         type_value = cmds.getAttr(f"{item}.type")
@@ -451,21 +471,21 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
                             foot_module = "Leg"
                         else:
                             foot_module = f"{foot_module[0]} {foot_module[1]}"
-                            
+
                     if side in ("L", "R"):
                         side = "R" if side == "L" else "L"
                     elif side == "C":
                         om.MGlobal.displayError("Cannot mirror Center (C) side guides.")
                         return
 
-                    mirrored_guides = self.add_guides(mirror=[split_name + " Module", side, joint_twist, type_name, f"{foot_module} Module"])
+                    mirrored_guides = self.add_guides(mirror=[split_name + " Module", side, joint_twist, type_name, controller_number, f"{foot_module} Module"])
 
                     for original, mirrored in zip(guide_list, mirrored_guides):
-                        # Match the mirrored object's transform to the original, but flip X
                         orig_pos = cmds.xform(original, q=True, ws=True, t=True)
                         flipped_pos = [orig_pos[0] * -1, orig_pos[1], orig_pos[2]]
                         cmds.xform(mirrored, ws=True, t=flipped_pos)
-                        om.MGlobal.displayInfo(f"Mirrored {original} to {mirrored}")
+
+                    om.MGlobal.displayInfo(f"Mirrored {original_module} to {side}_{attr}_GUIDE")
 
                 else:
                     om.MGlobal.displayWarning("Selected guide is not mirrorable.")
@@ -484,10 +504,23 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
             self.rig_type_label.setVisible(True)
             self.biped_radio.setVisible(True)
             self.quadruped_radio.setVisible(True)
+            self.controllers_num.setVisible(False)
+            self.controllers_num_input.setVisible(False)
+        elif self.selected_module == "Hand Module":
+            self.rig_type_label.setVisible(False)
+            self.biped_radio.setVisible(False)
+            self.quadruped_radio.setVisible(False)
+            self.twist_input.setVisible(False)
+            self.twist_label.setVisible(False)
+            self.controllers_num.setVisible(True)
+            self.controllers_num_input.setVisible(True)
+        
         else:
             self.rig_type_label.setVisible(False)
             self.biped_radio.setVisible(False)
             self.quadruped_radio.setVisible(False)
+            self.controllers_num.setVisible(False)
+            self.controllers_num_input.setVisible(False)
 
         om.MGlobal.displayInfo(f"Selected module: {self.selected_module}")
 
@@ -535,8 +568,9 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
             side = mirror[1] if mirror else self.side_combo.currentText()[0]
             twist_joints = mirror[2] if mirror else self.twist_input.value()
             type = mirror[3] if mirror else self.rig_type_group.checkedButton().text().lower()
+            controller_number = mirror[4] if mirror else self.controllers_num_input.value()
 
-            limb_attr = mirror[4] if mirror else module_name
+            limb_attr = mirror[5] if mirror else module_name
 
             limb_name = "foot" if limb_attr == "Leg Module" else limb_attr.split(" ")[0].lower() + "Leg"
 
@@ -547,6 +581,7 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
                 "Back Leg Module": guide_creation_ui.BackLegGuideCreation(side=side, twist_joints=twist_joints),
                 "Spine Module": guide_creation_ui.SpineGuideCreation(side=side, twist_joints=twist_joints, type=type),
                 "Neck Module": guide_creation_ui.NeckGuideCreation(side=side, twist_joints=twist_joints, type=type),
+                "Hand Module": guide_creation_ui.HandGuideCreation(side=side, controller_number=controller_number)
             }
 
             if mirror and mirror[0] == "Foot Module":

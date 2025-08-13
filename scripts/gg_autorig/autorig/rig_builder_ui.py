@@ -15,6 +15,7 @@ from gg_autorig.autorig.ui import neck_module_biped as nck_bip
 from gg_autorig.autorig.ui import skeleton_hierarchy as skh
 from gg_autorig.autorig.ui import variable_fk as vfk
 from gg_autorig.utils import space_switch as ss
+from gg_autorig.autorig.ui import hand_module as han
 
 # Python libraries import
 import maya.cmds as cmds
@@ -33,6 +34,7 @@ reload(nck_bip)
 reload(ss)
 reload(vfk)
 reload(skh)
+reload(han)
 
 def rename_ctl_shapes():
     """
@@ -98,6 +100,8 @@ def make(asset_name="dragon"):
                     lbm.LegModule(guide_name).make()
                 if guide_info.get("moduleName") == "backLeg":
                     lbm.BackLegModule(guide_name).make()
+                if guide_info.get("moduleName") == "hand":
+                    han.HandModule().make(guide_name=guide_name)
                 if guide_info.get("moduleName") == "spine":
                     if guide_info.get("type") == 0:
                         spm_bip.SpineModule().make(guide_name)
@@ -109,7 +113,7 @@ def make(asset_name="dragon"):
                     elif guide_info.get("type") == 1:
                         nck_quad.NeckModule().make(guide_name)
 
-    skeleton_hierarchy = skh.build_complete_hierarchy() 
+    # skeleton_hierarchy = skh.build_complete_hierarchy() 
     # ss.make_spaces_quadruped()
 
     rename_ctl_shapes()
