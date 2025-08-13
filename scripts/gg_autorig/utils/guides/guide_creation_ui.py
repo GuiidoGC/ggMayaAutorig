@@ -304,8 +304,6 @@ class GuideCreation(object):
                 temp_pos = cmds.createNode("transform", name=f"{side}_{joint_name}_temp")
                 type = "joint"
                 cmds.setAttr(temp_pos + ".translate", position[0], position[1], position[2])
-                if joint_name == "localHip":
-                    print(position)
 
                 parent = self.guides_trn if not self.guides else self.guides[-1]
                 if "Settings" in joint_name:
@@ -332,9 +330,9 @@ class GuideCreation(object):
 
                     if hasattr(self, "type"):
                         enum_name = "type"
-                        cmds.addAttr(guide, longName=enum_name, attributeType="enum", enumName=self.type, keyable=False)
-                        cmds.setAttr(f"{guide}.{enum_name}", 0)
-                        
+                        cmds.addAttr(guide, longName=enum_name, attributeType="enum", enumName="biped:quadruped", keyable=False)
+                        cmds.setAttr(f"{guide}.{enum_name}", 0 if self.type == "biped" else 1)
+
                     cmds.addAttr(guide, longName="moduleName", attributeType="enum", enumName=self.limb_name, keyable=False)
 
 
@@ -389,13 +387,15 @@ class GuideCreation(object):
                 cmds.connectAttr(self.guides[2 + value] + ".worldMatrix[0]", aimMatrix + ".primaryTargetMatrix")
                 cmds.connectAttr(self.guides[3 + value] + ".worldMatrix[0]", aimMatrix + ".secondaryTargetMatrix")
 
+        cmds.select(self.guides[0])
         return self.guides
 
 def get_data(name, file_name=None):
     if not file_name or file_name == "_":
         file_name = "body_template_"
 
-    final_path = core.init_template_file(ext=".guides", export=False, file_name=file_name)
+    # final_path = core.init_template_file(ext=".guides", export=False, file_name=file_name)
+    final_path = core.init_template_file(ext=".guides", export=False)
 
     try:
         with open(final_path, "r") as infile:
@@ -403,7 +403,6 @@ def get_data(name, file_name=None):
     except Exception as e:
         return [0,0,0]
 
-    # Filtrar solo bloques que sean diccionarios
     for template_name, guides in guides_data.items():
         if not isinstance(guides, dict):
             continue
@@ -431,7 +430,6 @@ class ArmGuideCreation(GuideCreation):
             "wrist": get_data(f"{self.sides}_wrist", file_name=file_name),
             "armSettings": get_data(f"{self.sides}_armSettings", file_name=file_name),
         }
-        print("Creacion creada")
 
 class LegGuideCreation(GuideCreation):
     """
@@ -444,12 +442,12 @@ class LegGuideCreation(GuideCreation):
         self.aim_name = "hip"
         self.aim_offset = -1
         self.position_data = {
-            "hip": get_data(f"{self.sides}_hip", file_name = file_name),
-            "knee": get_data(f"{self.sides}_knee", file_name = file_name),
-            "ankle": get_data(f"{self.sides}_ankle", file_name = file_name),
-            "ball": get_data(f"{self.sides}_ball", file_name = file_name),
-            "tip": get_data(f"{self.sides}_tip", file_name = file_name),
-            "legSettings": get_data(f"{self.sides}_legSettings", file_name = file_name),
+            "hip": get_data(f"{self.sides}_hip"),
+            "knee": get_data(f"{self.sides}_knee"),
+            "ankle": get_data(f"{self.sides}_ankle"),
+            "ball": get_data(f"{self.sides}_ball"),
+            "tip": get_data(f"{self.sides}_tip"),
+            "legSettings": get_data(f"{self.sides}_legSettings"),
         }
 
 class FrontLegGuideCreation(GuideCreation):
@@ -463,13 +461,13 @@ class FrontLegGuideCreation(GuideCreation):
         self.aim_name = "scapula"
         self.aim_offset = -1
         self.position_data = {
-        "scapula": get_data(f"{self.sides}_scapula", file_name = file_name),
-        "shoulder": get_data(f"{self.sides}_shoulder", file_name = file_name),
-        "frontKnee": get_data(f"{self.sides}_frontKnee", file_name = file_name),
-        "frontAnkle": get_data(f"{self.sides}_frontAnkle", file_name = file_name),
-        "frontFoot": get_data(f"{self.sides}_frontFoot", file_name = file_name),
-        "frontToe": get_data(f"{self.sides}_frontToe", file_name = file_name),
-        "frontLegSettings": get_data(f"{self.sides}_frontLegSettings", file_name = file_name),
+        "scapula": get_data(f"{self.sides}_scapula"),
+        "shoulder": get_data(f"{self.sides}_shoulder"),
+        "frontKnee": get_data(f"{self.sides}_frontKnee"),
+        "frontAnkle": get_data(f"{self.sides}_frontAnkle"),
+        "frontFoot": get_data(f"{self.sides}_frontFoot"),
+        "frontToe": get_data(f"{self.sides}_frontToe"),
+        "frontLegSettings": get_data(f"{self.sides}_frontLegSettings"),
     }
 
 class BackLegGuideCreation(GuideCreation):
@@ -483,12 +481,12 @@ class BackLegGuideCreation(GuideCreation):
         self.aim_name = "hip"
         self.aim_offset = -1
         self.position_data = {
-        "hip": get_data(f"{self.sides}_hip", file_name = file_name),
-        "backKnee": get_data(f"{self.sides}_backKnee", file_name = file_name),
-        "backAnkle": get_data(f"{self.sides}_backAnkle", file_name = file_name),
-        "backFoot": get_data(f"{self.sides}_backFoot", file_name = file_name),
-        "backToe": get_data(f"{self.sides}_backToe", file_name = file_name),
-        "backLegSettings": get_data(f"{self.sides}_backLegSettings", file_name = file_name),
+        "hip": get_data(f"{self.sides}_hip"),
+        "backKnee": get_data(f"{self.sides}_backKnee"),
+        "backAnkle": get_data(f"{self.sides}_backAnkle"),
+        "backFoot": get_data(f"{self.sides}_backFoot"),
+        "backToe": get_data(f"{self.sides}_backToe"),
+        "backLegSettings": get_data(f"{self.sides}_backLegSettings"),
     }
 
 class SpineGuideCreation(GuideCreation):
@@ -502,9 +500,9 @@ class SpineGuideCreation(GuideCreation):
         self.limb_name = "spine"
         self.aim_name = None
         self.position_data = {
-            "spine01": get_data(f"{self.sides}_spine01", file_name = file_name),
-        "spine02": get_data(f"{self.sides}_spine02", file_name = file_name),
-        "localHip": get_data(f"{self.sides}_localHip", file_name = file_name),
+        "spine01": get_data(f"{self.sides}_spine01"),
+        "spine02": get_data(f"{self.sides}_spine02"),
+        "localHip": get_data(f"{self.sides}_localHip"),
     }
 
 class NeckGuideCreation(GuideCreation):
@@ -518,8 +516,8 @@ class NeckGuideCreation(GuideCreation):
         self.limb_name = "neck"
         self.aim_name = None
         self.position_data = {
-            "neck": get_data(f"{self.sides}_neck", file_name = file_name),
-            "head": get_data(f"{self.sides}_head", file_name = file_name),
+            "neck": get_data(f"{self.sides}_neck"),
+            "head": get_data(f"{self.sides}_head"),
         }
 
 class HandGuideCreation(GuideCreation):
@@ -532,81 +530,51 @@ class HandGuideCreation(GuideCreation):
         self.aim_name = None
         self.aim_offset = 0
         self.position_data = {
-            "metacarpalIndex": get_data(f"{self.sides}_metacarpalIndex", file_name = file_name),
-            "index01": get_data(f"{self.sides}_index01", file_name = file_name),
-            "index02": get_data(f"{self.sides}_index02", file_name = file_name),
-            "index03": get_data(f"{self.sides}_index03", file_name = file_name),
-            "indexEnd": get_data(f"{self.sides}_indexEnd", file_name = file_name),
-            "metacarpalMiddle": get_data(f"{self.sides}_metacarpalMiddle", file_name = file_name),
-            "middle01": get_data(f"{self.sides}_middle01", file_name = file_name),
-            "middle02": get_data(f"{self.sides}_middle02", file_name = file_name),
-            "middle03": get_data(f"{self.sides}_middle03", file_name = file_name),
-            "middleEnd": get_data(f"{self.sides}_middleEnd", file_name = file_name),
-            "metacarpalRing": get_data(f"{self.sides}_metacarpalRing", file_name = file_name),
-            "ring01": get_data(f"{self.sides}_ring01", file_name = file_name),
-            "ring02": get_data(f"{self.sides}_ring02", file_name = file_name),
-            "ring03": get_data(f"{self.sides}_ring03", file_name = file_name),
-            "ringEnd": get_data(f"{self.sides}_ringEnd", file_name = file_name),
-            "metacarpalPinky": get_data(f"{self.sides}_metacarpalPinky", file_name = file_name),
-            "pinky01": get_data(f"{self.sides}_pinky01", file_name = file_name),
-            "pinky02": get_data(f"{self.sides}_pinky02", file_name = file_name),
-            "pinky03": get_data(f"{self.sides}_pinky03", file_name = file_name),
-            "pinkyEnd": get_data(f"{self.sides}_pinkyEnd", file_name = file_name),
-            "metacarpalThumb": get_data(f"{self.sides}_metacarpalThumb", file_name = file_name),
-            "thumb01": get_data(f"{self.sides}_thumb01", file_name = file_name),
-            "thumb02": get_data(f"{self.sides}_thumb02", file_name = file_name),
-            "thumbEnd": get_data(f"{self.sides}_thumbEnd", file_name = file_name),
+            "metacarpalIndex": get_data(f"{self.sides}_metacarpalIndex"),
+            "index01": get_data(f"{self.sides}_index01"),
+            "index02": get_data(f"{self.sides}_index02"),
+            "index03": get_data(f"{self.sides}_index03"),
+            "indexEnd": get_data(f"{self.sides}_indexEnd"),
+            "metacarpalMiddle": get_data(f"{self.sides}_metacarpalMiddle"),
+            "middle01": get_data(f"{self.sides}_middle01"),
+            "middle02": get_data(f"{self.sides}_middle02"),
+            "middle03": get_data(f"{self.sides}_middle03"),
+            "middleEnd": get_data(f"{self.sides}_middleEnd"),
+            "metacarpalRing": get_data(f"{self.sides}_metacarpalRing"),
+            "ring01": get_data(f"{self.sides}_ring01"),
+            "ring02": get_data(f"{self.sides}_ring02"),
+            "ring03": get_data(f"{self.sides}_ring03"),
+            "ringEnd": get_data(f"{self.sides}_ringEnd"),
+            "metacarpalPinky": get_data(f"{self.sides}_metacarpalPinky"),
+            "pinky01": get_data(f"{self.sides}_pinky01"),
+            "pinky02": get_data(f"{self.sides}_pinky02"),
+            "pinky03": get_data(f"{self.sides}_pinky03"),
+            "pinkyEnd": get_data(f"{self.sides}_pinkyEnd"),
+            "metacarpalThumb": get_data(f"{self.sides}_metacarpalThumb"),
+            "thumb01": get_data(f"{self.sides}_thumb01"),
+            "thumb02": get_data(f"{self.sides}_thumb02"),
+            "thumbEnd": get_data(f"{self.sides}_thumbEnd"),
         }
 
 class FootGuideCreation(GuideCreation):
     """
     Guide creation for feet.
     """
-    def __init__(self, side = "L", twist_joints=5, file_name = "body_template_"):
+    def __init__(self, side = "L", limb_name="foot"):
         self.sides = side
-        self.twist_joints = twist_joints
+        self.reverse_foot_name = limb_name
         self.limb_name = "foot"
         self.aim_name = None
         self.aim_offset = 0
+        ctl = "" if self.reverse_foot_name == "foot" else self.reverse_foot_name
+        first_b_letter = "b" if ctl == "" else "B"
+        first_h_letter = "h" if ctl == "" else "H"
         self.position_data = {
-        "bankOut": get_data(f"{self.sides}_bankOut", file_name = file_name),
-        "bankIn": get_data(f"{self.sides}_bankIn", file_name = file_name),
-        "heel": get_data(f"{self.sides}_heel", file_name = file_name),
+        f"{ctl}{first_b_letter}ankOut": get_data(f"{self.sides}_{ctl}{first_b_letter}ankOut"),
+        f"{ctl}{first_b_letter}ankIn": get_data(f"{self.sides}_{ctl}{first_b_letter}ankIn"),
+        f"{ctl}{first_h_letter}eel": get_data(f"{self.sides}_{ctl}{first_h_letter}eel"),
     }
-
-class FrontFootGuideCreation(GuideCreation):
-    """
-    Guide creation for front feet.
-    """
-    def __init__(self, side = "L", twist_joints=5, file_name = "body_template_"):
-        self.sides = side
-        self.twist_joints = twist_joints
-        self.limb_name = "frontFoot"
-        self.aim_name = None
-        self.aim_offset = 0
-        self.position_data = {
-        "frontLegBankOut": get_data(f"{self.sides}_frontLegBankOut", file_name = file_name),
-        "frontLegBankIn": get_data(f"{self.sides}_frontLegBankIn", file_name = file_name),
-        "frontLegHeel": get_data(f"{self.sides}_frontLegHeel", file_name = file_name),
-    }
-
-class BackFootGuideCreation(GuideCreation):
-    """
-    Guide creation for back feet.
-    """
-    def __init__(self, side = "L", twist_joints=5, file_name = "body_template_"):
-        self.sides = side
-        self.twist_joints = twist_joints
-        self.limb_name = "backFoot"
-        self.aim_name = None
-        self.aim_offset = 0
-        # Using get_data to fetch the position data for back foot guides
-        self.position_data = {
-            "backLegBankOut": get_data(f"{self.sides}_backLegBankOut", file_name = file_name),
-            "backLegBankIn": get_data(f"{self.sides}_backLegBankIn", file_name = file_name),
-            "backLegHeel": get_data(f"{self.sides}_backLegHeel", file_name = file_name),
-        }
-
+        
 class VariableFK(GuideCreation):
     """
     Guide creation for variable FK.
@@ -683,8 +651,6 @@ def quadruped_rebuild_guides():
     BackLegGuideCreation().create_guides(guides_trn, buffers_trn)
     SpineGuideCreation().create_guides(guides_trn, buffers_trn)
     NeckGuideCreation().create_guides(guides_trn, buffers_trn)
-    BackFootGuideCreation().create_guides(guides_trn, buffers_trn)
-    FrontFootGuideCreation().create_guides(guides_trn, buffers_trn)
     VariableFK(quantity=15, sides=["C"], prefix="trunk").create_guides(guides_trn, buffers_trn)
     VariableFK(quantity=15, sides=["C"], prefix="tail").create_guides(guides_trn, buffers_trn)
     JiggleJoint(quantity=15, sides=["C"], prefix="tail").create_guides(guides_trn, buffers_trn)
@@ -693,7 +659,8 @@ def load_guides(path = ""):
     if not path or path == "_":
         path = "body_template_"
 
-    final_path = core.init_template_file(ext=".guides", export=False, file_name=path)
+    # final_path = core.init_template_file(ext=".guides", export=False, file_name=path)
+    final_path = core.init_template_file(ext=".guides", export=False)
 
     try:
         with open(final_path, "r") as infile:
@@ -715,26 +682,30 @@ def load_guides(path = ""):
         if cmds.listRelatives(buffers_trn, parent=True) != [guides_trn]:
             cmds.parent(buffers_trn, guides_trn)
 
+    cmds.setAttr(f"{buffers_trn}.hiddenInOutliner ", True)
+
     for template_name, guides in guides_data.items():
         if not isinstance(guides, dict):
             continue  # ignorar "hierarchy" u otros que no sean diccionarios de guías
 
         for guide_name, guide_info in guides.items():
             if guide_info.get("moduleName") != "Child":
-
                 if guide_info.get("moduleName") == "arm":
-                    print("arm")
-                    ArmGuideCreation(side=guide_name.split("_")[0], twist_joints=guide_info.get("jointTwist"), file_name=final_path).create_guides(guides_trn, buffers_trn)
+                    ArmGuideCreation(side=guide_name.split("_")[0], twist_joints=guide_info.get("jointTwist")).create_guides(guides_trn, buffers_trn)
                 if guide_info.get("moduleName") == "frontLeg":
-                    FrontLegGuideCreation(side=guide_name.split("_")[0], twist_joints=guide_info.get("jointTwist"), file_name=final_path).create_guides(guides_trn, buffers_trn)
+                    FrontLegGuideCreation(side=guide_name.split("_")[0], twist_joints=guide_info.get("jointTwist")).create_guides(guides_trn, buffers_trn)
                 if guide_info.get("moduleName") == "leg":
-                    LegGuideCreation(side=guide_name.split("_")[0], twist_joints=guide_info.get("jointTwist"), file_name=final_path).create_guides(guides_trn, buffers_trn)
+                    LegGuideCreation(side=guide_name.split("_")[0], twist_joints=guide_info.get("jointTwist")).create_guides(guides_trn, buffers_trn)
                 if guide_info.get("moduleName") == "backLeg":
-                    BackLegGuideCreation(side=guide_name.split("_")[0], twist_joints=guide_info.get("jointTwist"), file_name=final_path).create_guides(guides_trn, buffers_trn)
+                    BackLegGuideCreation(side=guide_name.split("_")[0], twist_joints=guide_info.get("jointTwist")).create_guides(guides_trn, buffers_trn)
                 if guide_info.get("moduleName") == "spine":
-                    SpineGuideCreation(side=guide_name.split("_")[0], twist_joints=guide_info.get("jointTwist"), type=guide_info.get("type"), file_name=final_path).create_guides(guides_trn, buffers_trn)
+                    SpineGuideCreation(side=guide_name.split("_")[0], twist_joints=guide_info.get("jointTwist"), type=guide_info.get("type")).create_guides(guides_trn, buffers_trn)
                 if guide_info.get("moduleName") == "neck":
-                    NeckGuideCreation(side=guide_name.split("_")[0], twist_joints=guide_info.get("jointTwist"), type=guide_info.get("type"), file_name=final_path).create_guides(guides_trn, buffers_trn)
+                    NeckGuideCreation(side=guide_name.split("_")[0], twist_joints=guide_info.get("jointTwist"), type=guide_info.get("type")).create_guides(guides_trn, buffers_trn)
+                if guide_info.get("moduleName") == "foot":
+                    limb_name = guide_name.split("_")[1].split("BankOut")[0]
+                    FootGuideCreation(side=guide_name.split("_")[0], limb_name=limb_name).create_guides(guides_trn, buffers_trn)
+
 
 
 # biped_rebuild_guides()

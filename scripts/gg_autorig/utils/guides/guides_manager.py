@@ -7,13 +7,13 @@ from gg_autorig.utils import data_export
 from importlib import reload
 reload(core)
 
-def guides_export(file_name = None, skelTree = None):
+def guides_export(skelTree = None):
         """
         Exports the guides from the selected folder in the Maya scene to a JSON file.
         """
-        file_name = file_name or "body_template"
 
-        TEMPLATE_FILE = core.init_template_file(ext=".guides", file_name=f"{file_name}_")
+        # TEMPLATE_FILE = core.init_template_file(ext=".guides", file_name=f"{file_name}_")
+        TEMPLATE_FILE = core.init_template_file(ext=".guides")
         print(f"Exporting guides to {TEMPLATE_FILE}")
         
         guides_folder = cmds.ls(sl=True) or cmds.ls("guides_GRP", type="transform")
@@ -87,20 +87,35 @@ def guides_export(file_name = None, skelTree = None):
 
         om.MGlobal.displayInfo(f"Guides data exported to {TEMPLATE_FILE}")
 
-def get_data(name):
+def get_data(name, module_name=False):
 
     final_path = core.init_template_file(ext=".guides", export=False)
 
-    with open(final_path, "r") as infile:
-                guides_data = json.load(infile)
+    try:
+        with open(final_path, "r") as infile:
+            guides_data = json.load(infile)
+    except Exception as e:
+        if module_name:
+            return None, None, None
+        else:
+            return None, None
 
     for template_name, guides in guides_data.items():
+        if not isinstance(guides, dict):
+            continue
         for guide_name, guide_info in guides.items():
             if name in guide_name:
                 world_position = guide_info.get("worldPosition")
                 parent = guide_info.get("parent")
-                return world_position, parent
-    return None, None
+                if module_name:
+                        moduleName = guide_info.get("moduleName")
+                        return world_position, parent, moduleName
+                else:
+                    return world_position, parent
+    if module_name:
+        return None, None, None 
+    else:
+        return None, None
 
 
 def guide_import(joint_name, all_descendents=True, path=None):
@@ -128,11 +143,13 @@ def guide_import(joint_name, all_descendents=True, path=None):
         if all_descendents:
                 
                 if all_descendents is True:
-                        world_position, parent = get_data(joint_name)
+                        world_position, parent, moduleName = get_data(joint_name, module_name=True)
                         guide_transform = cmds.createNode('transform', name=joint_name)
                         cmds.xform(guide_transform, ws=True, t=world_position)
                         cmds.parent(guide_transform, guide_grp)
                         transforms_chain_export.append(guide_transform)
+                        if moduleName != "Child":
+                               cmds.addAttr(guide_transform, longName="moduleName", attributeType="enum", enumName=moduleName, keyable=False)
 
 
                         final_path = core.init_template_file(ext=".guides", export=False)
@@ -163,11 +180,13 @@ def guide_import(joint_name, all_descendents=True, path=None):
         
         
         else:
-                world_position, parent = get_data(joint_name)
+                world_position, parent, moduleName = get_data(joint_name, module_name=True)
                 guide_transform = cmds.createNode('transform', name=joint_name)
                 cmds.xform(guide_transform, ws=True, t=world_position)
                 cmds.parent(guide_transform, guide_grp)
                 transforms_chain_export.append(guide_transform)
+                if moduleName != "Child":
+                        cmds.addAttr(guide_transform, longName="moduleName", attributeType="enum", enumName=moduleName, keyable=False)
 
         return transforms_chain_export
                

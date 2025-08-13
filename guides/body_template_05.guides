@@ -1,5 +1,5 @@
 {
-    "body_template_04": {
+    "body_template_05": {
         "L_wrist_GUIDE": {
             "worldPosition": [
                 18.63984095679776,
@@ -176,6 +176,39 @@
             "type": "Child",
             "moduleName": "leg"
         },
+        "R_heel_GUIDE": {
+            "worldPosition": [
+                -3.0,
+                0.0,
+                -2.0
+            ],
+            "parent": "R_bankIn_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "R_bankIn_GUIDE": {
+            "worldPosition": [
+                -1.0,
+                0.0,
+                3.0
+            ],
+            "parent": "R_bankOut_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "R_bankOut_GUIDE": {
+            "worldPosition": [
+                -5.0,
+                0.0,
+                3.0
+            ],
+            "parent": "guides_GRP",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "foot"
+        },
         "L_tip_GUIDE": {
             "worldPosition": [
                 3.0,
@@ -242,6 +275,39 @@
             "type": "Child",
             "moduleName": "leg"
         },
+        "L_heel_GUIDE": {
+            "worldPosition": [
+                3.0,
+                0.0,
+                -2.0
+            ],
+            "parent": "L_bankIn_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "L_bankIn_GUIDE": {
+            "worldPosition": [
+                1.0,
+                0.0,
+                3.0
+            ],
+            "parent": "L_bankOut_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "L_bankOut_GUIDE": {
+            "worldPosition": [
+                5.0,
+                0.0,
+                3.0
+            ],
+            "parent": "guides_GRP",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "foot"
+        },
         "C_spine02_GUIDE": {
             "worldPosition": [
                 0.0,
@@ -267,7 +333,7 @@
         "C_localHip_GUIDE": {
             "worldPosition": [
                 0.0,
-                33.0,
+                32.0,
                 0.0
             ],
             "parent": "guides_GRP",
@@ -300,90 +366,27 @@
     },
     "hierarchy": [
         {
-            "C_masterWalk_CTL": [
+            "C_root_GUIDE": [
                 {
-                    "C_spine01_GUIDE": [
+                    "C_spine_GUIDE": [
                         {
-                            "C_spine02_GUIDE": [
+                            "C_localHip_GUIDE": [
                                 {
-                                    "L_clavicle_GUIDE": [
-                                        {
-                                            "L_shoulder_GUIDE": [
-                                                {
-                                                    "L_elbow_GUIDE": [
-                                                        {
-                                                            "L_wrist_GUIDE": []
-                                                        }
-                                                    ]
-                                                }
-                                            ]
-                                        }
-                                    ]
+                                    "L_leg_GUIDE": []
                                 },
                                 {
-                                    "R_clavicle_GUIDE": [
-                                        {
-                                            "R_shoulder_GUIDE": [
-                                                {
-                                                    "R_elbow_GUIDE": [
-                                                        {
-                                                            "R_wrist_GUIDE": []
-                                                        }
-                                                    ]
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                },
-                                {
-                                    "C_neck_GUIDE": [
-                                        {
-                                            "C_head_GUIDE": []
-                                        }
-                                    ]
+                                    "R_leg_GUIDE": []
                                 }
                             ]
                         },
                         {
-                            "R_hip_GUIDE": [
-                                {
-                                    "R_knee_GUIDE": [
-                                        {
-                                            "R_ankle_GUIDE": [
-                                                {
-                                                    "R_ball_GUIDE": [
-                                                        {
-                                                            "R_tip_GUIDE": []
-                                                        }
-                                                    ]
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ]
+                            "L_arm_GUIDE": []
                         },
                         {
-                            "C_localHip_GUIDE": []
+                            "R_arm_GUIDE": []
                         },
                         {
-                            "L_hip_GUIDE": [
-                                {
-                                    "L_knee_GUIDE": [
-                                        {
-                                            "L_ankle_GUIDE": [
-                                                {
-                                                    "L_ball_GUIDE": [
-                                                        {
-                                                            "L_tip_GUIDE": []
-                                                        }
-                                                    ]
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ]
+                            "C_neck_GUIDE": []
                         }
                     ]
                 }

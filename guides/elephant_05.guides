@@ -1,0 +1,506 @@
+{
+    "elephant_05": {
+        "L_frontToe_GUIDE": {
+            "worldPosition": [
+                32.33505653715047,
+                0.06561425909334773,
+                94.27030079958993
+            ],
+            "parent": "L_frontFoot_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "L_frontFoot_GUIDE": {
+            "worldPosition": [
+                32.33505653715047,
+                22.516352844157517,
+                61.60123887209764
+            ],
+            "parent": "L_frontAnkle_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "L_frontAnkle_GUIDE": {
+            "worldPosition": [
+                32.33505653715047,
+                43.63231994192161,
+                61.601238872097646
+            ],
+            "parent": "L_frontKnee_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "L_frontKnee_GUIDE": {
+            "worldPosition": [
+                32.33505653715047,
+                135.09811706494574,
+                58.948390977115565
+            ],
+            "parent": "L_shoulder_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "L_shoulder_GUIDE": {
+            "worldPosition": [
+                32.33505653715047,
+                214.72489712304798,
+                71.52557928410528
+            ],
+            "parent": "L_scapula_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "L_frontLegSettings_GUIDE": {
+            "worldPosition": [
+                84.0830413331266,
+                280.4668512167005,
+                56.757957762506024
+            ],
+            "parent": "L_scapula_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "L_scapula_GUIDE": {
+            "worldPosition": [
+                32.33505653715047,
+                280.46685121670043,
+                56.75795776250602
+            ],
+            "parent": "guides_GRP",
+            "jointTwist": 5.0,
+            "type": "Child",
+            "moduleName": "frontLeg"
+        },
+        "L_frontLegHeel_GUIDE": {
+            "worldPosition": [
+                32.33505653715047,
+                0.0,
+                37.422859009640796
+            ],
+            "parent": "L_frontLegBankIn_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "L_frontLegBankIn_GUIDE": {
+            "worldPosition": [
+                6.502266883850098,
+                0.0,
+                61.60123887209764
+            ],
+            "parent": "L_frontLegBankOut_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "L_frontLegBankOut_GUIDE": {
+            "worldPosition": [
+                49.06352233886719,
+                0.0,
+                61.60123887209764
+            ],
+            "parent": "guides_GRP",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "foot"
+        },
+        "R_frontToe_GUIDE": {
+            "worldPosition": [
+                -32.33505653715047,
+                0.06561425909334773,
+                94.27030079958993
+            ],
+            "parent": "R_frontFoot_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "R_frontFoot_GUIDE": {
+            "worldPosition": [
+                -32.33505653715047,
+                22.516352844157517,
+                61.60123887209764
+            ],
+            "parent": "R_frontAnkle_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "R_frontAnkle_GUIDE": {
+            "worldPosition": [
+                -32.33505653715047,
+                43.63231994192161,
+                61.601238872097646
+            ],
+            "parent": "R_frontKnee_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "R_frontKnee_GUIDE": {
+            "worldPosition": [
+                -32.33505653715047,
+                135.09811706494574,
+                58.948390977115565
+            ],
+            "parent": "R_shoulder_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "R_shoulder_GUIDE": {
+            "worldPosition": [
+                -32.33505653715047,
+                214.72489712304798,
+                71.52557928410528
+            ],
+            "parent": "R_scapula_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "R_frontLegSettings_GUIDE": {
+            "worldPosition": [
+                -84.0830413331266,
+                280.4668512167005,
+                56.757957762506024
+            ],
+            "parent": "R_scapula_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "R_scapula_GUIDE": {
+            "worldPosition": [
+                -32.33505653715047,
+                280.46685121670043,
+                56.75795776250602
+            ],
+            "parent": "guides_GRP",
+            "jointTwist": 5.0,
+            "type": "Child",
+            "moduleName": "frontLeg"
+        },
+        "R_frontLegHeel_GUIDE": {
+            "worldPosition": [
+                -32.33505653715047,
+                0.0,
+                37.422859009640796
+            ],
+            "parent": "R_frontLegBankIn_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "R_frontLegBankIn_GUIDE": {
+            "worldPosition": [
+                -6.502266883850098,
+                0.0,
+                61.60123887209764
+            ],
+            "parent": "R_frontLegBankOut_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "R_frontLegBankOut_GUIDE": {
+            "worldPosition": [
+                -49.06352233886719,
+                0.0,
+                61.60123887209764
+            ],
+            "parent": "guides_GRP",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "foot"
+        },
+        "R_backToe_GUIDE": {
+            "worldPosition": [
+                -31.012700863129474,
+                0.1285469734561424,
+                -121.73007937335738
+            ],
+            "parent": "R_backFoot_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "R_backFoot_GUIDE": {
+            "worldPosition": [
+                -31.012700863129474,
+                20.55721687225323,
+                -154.32412820340207
+            ],
+            "parent": "R_backAnkle_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "R_backAnkle_GUIDE": {
+            "worldPosition": [
+                -31.012700863129474,
+                32.31203270368019,
+                -159.29731951669808
+            ],
+            "parent": "R_backKnee_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "R_backKnee_GUIDE": {
+            "worldPosition": [
+                -31.012700863129474,
+                96.38579112235911,
+                -150.5040426951588
+            ],
+            "parent": "R_hip_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "R_backLegSettings_GUIDE": {
+            "worldPosition": [
+                -95.54306541973023,
+                203.39352322829345,
+                -158.00949364321121
+            ],
+            "parent": "R_hip_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "R_hip_GUIDE": {
+            "worldPosition": [
+                -34.012700863129474,
+                212.5258464873692,
+                -158.0094936432113
+            ],
+            "parent": "guides_GRP",
+            "jointTwist": 5.0,
+            "type": "Child",
+            "moduleName": "backLeg"
+        },
+        "R_backLegHeel_GUIDE": {
+            "worldPosition": [
+                -29.393483048135856,
+                8.326672684688674e-17,
+                -181.2637897083756
+            ],
+            "parent": "R_backLegBankIn_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "R_backLegBankIn_GUIDE": {
+            "worldPosition": [
+                -8.584434509277337,
+                0.0,
+                -154.32412820340232
+            ],
+            "parent": "R_backLegBankOut_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "R_backLegBankOut_GUIDE": {
+            "worldPosition": [
+                -49.33882522583008,
+                0.0,
+                -154.32412820340232
+            ],
+            "parent": "guides_GRP",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "foot"
+        },
+        "L_backToe_GUIDE": {
+            "worldPosition": [
+                31.012700863129474,
+                0.1285469734561424,
+                -121.73007937335738
+            ],
+            "parent": "L_backFoot_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "L_backFoot_GUIDE": {
+            "worldPosition": [
+                31.012700863129474,
+                20.55721687225323,
+                -154.32412820340207
+            ],
+            "parent": "L_backAnkle_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "L_backAnkle_GUIDE": {
+            "worldPosition": [
+                31.012700863129474,
+                32.31203270368019,
+                -159.29731951669808
+            ],
+            "parent": "L_backKnee_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "L_backKnee_GUIDE": {
+            "worldPosition": [
+                31.012700863129474,
+                96.38579112235911,
+                -150.5040426951588
+            ],
+            "parent": "L_hip_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "L_backLegSettings_GUIDE": {
+            "worldPosition": [
+                95.54306541973023,
+                203.39352322829345,
+                -158.00949364321121
+            ],
+            "parent": "L_hip_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "L_hip_GUIDE": {
+            "worldPosition": [
+                34.012700863129474,
+                212.5258464873692,
+                -158.0094936432113
+            ],
+            "parent": "guides_GRP",
+            "jointTwist": 5.0,
+            "type": "Child",
+            "moduleName": "backLeg"
+        },
+        "L_backLegHeel_GUIDE": {
+            "worldPosition": [
+                29.393483048135856,
+                8.326672684688674e-17,
+                -181.2637897083756
+            ],
+            "parent": "L_backLegBankIn_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "L_backLegBankIn_GUIDE": {
+            "worldPosition": [
+                8.584434509277337,
+                0.0,
+                -154.32412820340232
+            ],
+            "parent": "L_backLegBankOut_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "L_backLegBankOut_GUIDE": {
+            "worldPosition": [
+                49.33882522583008,
+                0.0,
+                -154.32412820340232
+            ],
+            "parent": "guides_GRP",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "foot"
+        },
+        "C_spine02_GUIDE": {
+            "worldPosition": [
+                0.0,
+                244.3616300382107,
+                25.084018553619345
+            ],
+            "parent": "C_spine01_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "C_spine01_GUIDE": {
+            "worldPosition": [
+                0.0,
+                244.3616300382107,
+                -120.58697481948415
+            ],
+            "parent": "guides_GRP",
+            "jointTwist": 5.0,
+            "type": 1,
+            "moduleName": "spine"
+        },
+        "C_localHip_GUIDE": {
+            "worldPosition": [
+                0.0,
+                212.5258464873692,
+                -158.0094936432113
+            ],
+            "parent": "guides_GRP",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "C_head_GUIDE": {
+            "worldPosition": [
+                0.0,
+                257.8853716557053,
+                160.56731364947362
+            ],
+            "parent": "C_neck_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child"
+        },
+        "C_neck_GUIDE": {
+            "worldPosition": [
+                0.0,
+                248.37164820181928,
+                104.98690416287069
+            ],
+            "parent": "guides_GRP",
+            "jointTwist": 5.0,
+            "type": 1,
+            "moduleName": "neck"
+        }
+    },
+    "hierarchy": [
+        {
+            "C_root_GUIDE": [
+                {
+                    "C_spine_GUIDE": [
+                        {
+                            "C_localHip_GUIDE": [
+                                {
+                                    "R_backLeg_GUIDE": []
+                                },
+                                {
+                                    "L_backLeg_GUIDE": []
+                                }
+                            ]
+                        },
+                        {
+                            "L_frontLeg_GUIDE": []
+                        },
+                        {
+                            "R_frontLeg_GUIDE": []
+                        },
+                        {
+                            "C_neck_GUIDE": []
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

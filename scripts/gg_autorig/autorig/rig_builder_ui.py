@@ -3,30 +3,36 @@
 # Tools / utils import
 from gg_autorig.utils import basic_structure
 from gg_autorig.utils import data_export
+from gg_autorig.utils import core
 # from gg_autorig.utils.guides import guides_manager
 
 # Rig modules import
-from gg_autorig.autorig.quadruped import limb_module_quadruped as lbm
-from gg_autorig.autorig.quadruped import spine_module_quadruped as spm
-from gg_autorig.autorig.quadruped import neck_module_quadruped as nck
-from gg_autorig.autorig.quadruped import skeleton_hierarchy as skh
-from gg_autorig.autorig.quadruped import variable_fk as vfk
+from gg_autorig.autorig.ui import limb_module as lbm
+from gg_autorig.autorig.ui import spine_module_quadruped as spm_quad
+from gg_autorig.autorig.ui import spine_module_biped as spm_bip
+from gg_autorig.autorig.ui import neck_module_quadruped as nck_quad
+from gg_autorig.autorig.ui import neck_module_biped as nck_bip
+from gg_autorig.autorig.ui import skeleton_hierarchy as skh
+from gg_autorig.autorig.ui import variable_fk as vfk
 from gg_autorig.utils import space_switch as ss
-
-
 
 # Python libraries import
 import maya.cmds as cmds
 from importlib import reload
+import json
+import maya.api.OpenMaya as om
 
 reload(basic_structure)
+reload(core)
 reload(data_export)
 reload(lbm)
-reload(spm)
-reload(nck)
-reload(skh)
+reload(spm_quad)
+reload(spm_bip)
+reload(nck_quad)
+reload(nck_bip)
 reload(ss)
 reload(vfk)
+reload(skh)
 
 def rename_ctl_shapes():
     """
@@ -69,37 +75,52 @@ def make(asset_name="dragon"):
         asset_name = "asset"
     basic_structure.create_basic_structure(asset_name=asset_name)
 
-    # modules_map = {
-    #     "Arm Module": lbm.make,
-    #     "Front Leg Module": spm.make,
-    #     "Leg Module": lbm.FrontLegModule(side="L").make(),
-    #     "Back Leg Module": lbm.BackLegModule(side="L").make(),
-    #     "Spine Module": spm.SpineModule().make(),
-    #     "Neck Module": nck.NeckModule().make(),
-    # }
-    # extra_modules_map = {
-    #     "Variable FK": vfk.VariableFkModule(side="C", prefix="trunk").make(),
-    #     "Rivet Module": vfk.RivetModule().make(),
-    # }    
+    final_path = core.init_template_file(ext=".guides", export=False)
 
-    # for side in ["L", "R"]:
-    #     lbm.ArmModule(side=side).make()
-    #     lbm.LegModule(side=side).make()
+    try:
+        with open(final_path, "r") as infile:
+            guides_data = json.load(infile)
 
+    except Exception as e:
+        om.MGlobal.displayError(f"Error loading guides data: {e}")
 
+    for template_name, guides in guides_data.items():
+        if not isinstance(guides, dict):
+            continue
 
-    # skeleton_hierarchy = skh.get_data()
+        for guide_name, guide_info in guides.items():
+            if guide_info.get("moduleName") != "Child":
+                if guide_info.get("moduleName") == "arm":
+                    lbm.ArmModule(guide_name).make()
+                if guide_info.get("moduleName") == "frontLeg":
+                    lbm.FrontLegModule(guide_name).make()
+                if guide_info.get("moduleName") == "leg":
+                    lbm.LegModule(guide_name).make()
+                if guide_info.get("moduleName") == "backLeg":
+                    lbm.BackLegModule(guide_name).make()
+                if guide_info.get("moduleName") == "spine":
+                    if guide_info.get("type") == 0:
+                        spm_bip.SpineModule().make(guide_name)
+                    elif guide_info.get("type") == 1:
+                        spm_quad.SpineModule().make(guide_name)
+                if guide_info.get("moduleName") == "neck":
+                    if guide_info.get("type") == 0:
+                        nck_bip.NeckModule().make(guide_name)
+                    elif guide_info.get("type") == 1:
+                        nck_quad.NeckModule().make(guide_name)
+
+    skeleton_hierarchy = skh.build_complete_hierarchy() 
     # ss.make_spaces_quadruped()
 
-    # rename_ctl_shapes()
-    # joint_label()
+    rename_ctl_shapes()
+    joint_label()
 
-    # cmds.inViewMessage(
-    # amg='Completed <hl>BIPED RIG</hl> build.',
-    # pos='midCenter',
-    # fade=True,
-    # alpha=0.8)
+    cmds.inViewMessage(
+    amg=f'Completed <hl> {asset_name.capitalize()} RIG</hl> build.',
+    pos='midCenter',
+    fade=True,
+    alpha=0.8)
 
-    # cmds.select(clear=True)
+    cmds.select(clear=True)
 
 
