@@ -7,15 +7,15 @@ from gg_autorig.utils import core
 # from gg_autorig.utils.guides import guides_manager
 
 # Rig modules import
-from gg_autorig.autorig.ui import limb_module as lbm
-from gg_autorig.autorig.ui import spine_module_quadruped as spm_quad
-from gg_autorig.autorig.ui import spine_module_biped as spm_bip
-from gg_autorig.autorig.ui import neck_module_quadruped as nck_quad
-from gg_autorig.autorig.ui import neck_module_biped as nck_bip
-from gg_autorig.autorig.ui import skeleton_hierarchy as skh
-from gg_autorig.autorig.ui import variable_fk as vfk
+from gg_autorig.autorig import limb_module as lbm
+from gg_autorig.autorig import spine_module_quadruped as spm_quad
+from gg_autorig.autorig import spine_module_biped as spm_bip
+from gg_autorig.autorig import neck_module_quadruped as nck_quad
+from gg_autorig.autorig import neck_module_biped as nck_bip
+from gg_autorig.autorig import skeleton_hierarchy as skh
+from gg_autorig.autorig import variable_fk as vfk
 from gg_autorig.utils import space_switch as ss
-from gg_autorig.autorig.ui import hand_module as han
+from gg_autorig.autorig import hand_module as han
 
 # Python libraries import
 import maya.cmds as cmds
@@ -112,8 +112,10 @@ def make(asset_name="dragon"):
                         nck_bip.NeckModule().make(guide_name)
                     elif guide_info.get("type") == 1:
                         nck_quad.NeckModule().make(guide_name)
+                if guide_info.get("moduleName") == "variableFk":
+                    vfk.VariableFkModule().make(guide_name)
 
-    # skeleton_hierarchy = skh.build_complete_hierarchy() 
+    skeleton_hierarchy = skh.build_complete_hierarchy() 
     # ss.make_spaces_quadruped()
 
     rename_ctl_shapes()

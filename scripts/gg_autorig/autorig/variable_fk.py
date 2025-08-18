@@ -17,10 +17,7 @@ reload(guides_manager)
 
 class VariableFkModule(object):
 
-    def __init__(self, side="C",prefix = "trunk"):
-
-        self.prefix = prefix
-        self.side = side
+    def __init__(self):
 
         self.data_exporter = data_export.DataExport()
 
@@ -30,26 +27,40 @@ class VariableFkModule(object):
         self.guides_grp = self.data_exporter.get_data("basic_structure", "guides_GRP")
 
 
-    def make(self):
+    def make(self, guide_name):
+
+        self.guide_name = guide_name
+        self.side = guide_name.split("_")[0]
 
         """
         Create a limb rig with controllers and constraints.
         This function sets up the basic structure for a limb, including controllers and constraints.
         """      
 
-        self.individual_module_grp = cmds.createNode("transform", name=f"{self.side}_{self.prefix}Module_GRP", parent=self.modules_grp, ss=True)
-        self.individual_controllers_grp = cmds.createNode("transform", name=f"{self.side}_{self.prefix}Controllers_GRP", parent=self.masterWalk_ctl, ss=True)
-        self.skinnging_grp = cmds.createNode("transform", name=f"{self.side}_{self.prefix}SkinningJoints_GRP", parent=self.skel_grp, ss=True)
+        self.guides = guide_import(self.guide_name, all_descendents=True, path=None)
 
-        self.guides = guide_import(f"{self.side}_{self.prefix}VariableFK001_GUIDE", all_descendents=True, path=None)
+        if cmds.attributeQuery("moduleName", node=self.guides[0], exists=True):
+            self.enum_str = cmds.attributeQuery("moduleName", node=self.guides[0], listEnum=True)[0]
+
+            
+        if cmds.attributeQuery("prefix", node=self.guides[0], exists=True):
+            self.prefix = cmds.attributeQuery("prefix", node=self.guides[0], listEnum=True)[0]
+
+        self.individual_module_grp = cmds.createNode("transform", name=f"{self.side}_{self.prefix}VariableFkModule_GRP", parent=self.modules_grp, ss=True)
+        self.individual_controllers_grp = cmds.createNode("transform", name=f"{self.side}_{self.prefix}VariableFkControllers_GRP", parent=self.masterWalk_ctl, ss=True)
+        self.skinnging_grp = cmds.createNode("transform", name=f"{self.side}_{self.prefix}VariableFkSkinningJoints_GRP", parent=self.skel_grp, ss=True)
+
+        cmds.addAttr(self.skinnging_grp, longName="moduleName", attributeType="enum", enumName=self.enum_str, keyable=False)
+        cmds.addAttr(self.skinnging_grp, longName="prefix", attributeType="enum", enumName=self.prefix, keyable=False)
 
         self.create_surface()
 
         self.data_exporter.append_data(
-            f"{self.side}_{self.prefix}Module",
+            f"{self.side}_{self.prefix}VariableFkModule",
             {
                 "skinning_transform": self.skinnging_grp,
                 "main_ctl": self.main_ctl,
+                "end_main_ctl" : self.ctls[-1],
             }
         )
 
@@ -161,10 +172,35 @@ class VariableFkModule(object):
             cmds.connectAttr(f"{ctl}.ctl_pos", f"{pointOnSurface}.parameterV")
 
 
+            pointOnSurface_Aim = cmds.createNode("pointOnSurfaceInfo", name=f"{self.side}_{self.prefix}VariableFkAim{i+1:02d}_POSI")
+            cmds.connectAttr(f"{surface}.worldSpace[0]", f"{pointOnSurface_Aim}.inputSurface")
+            cmds.setAttr(f"{pointOnSurface_Aim}.parameterU", 0.5)
+            condition = cmds.createNode("condition", name=f"{self.side}_{self.prefix}VariableFkAim{i+1:02d}_CON")
+            cmds.connectAttr(f"{ctl}.ctl_pos", f"{condition}.firstTerm")
+            cmds.setAttr(f"{condition}.secondTerm", 1)
+            cmds.setAttr(f"{condition}.operation", 0)
+            cmds.setAttr(f"{condition}.colorIfTrue", -0.01, 1, 0, type="double3")
+            cmds.setAttr(f"{condition}.colorIfFalse", 0.01, -1, 0, type="double3")
+            float_math = cmds.createNode("floatMath", name=f"{self.side}_{self.prefix}VariableFkAim{i+1:02d}_FLM")
+            cmds.connectAttr(f"{condition}.outColorR", f"{float_math}.floatA")
+            cmds.setAttr(f"{float_math}.operation", 0)
+            cmds.connectAttr(f"{ctl}.ctl_pos", f"{float_math}.floatB")
+            cmds.connectAttr(f"{float_math}.outFloat", f"{pointOnSurface_Aim}.parameterV")
+
+            aim_matrix = cmds.createNode("aimMatrix", name=f"{self.side}_{self.prefix}VariableFkAim{i+1:02d}_AMX")
+            cmds.setAttr(f"{aim_matrix}.primaryInputAxis", 0, 0, 0, type="double3")
+
             compose = cmds.createNode("composeMatrix", name=f"{self.side}_{self.prefix}VariableFk{i+1:02d}_CM")
             cmds.connectAttr(f"{pointOnSurface}.position", f"{compose}.inputTranslate")
-            cmds.connectAttr(f"{decompose}.outputScale", f"{compose}.inputScale")
-            cmds.connectAttr(f"{compose}.outputMatrix", f"{ctl_grp[0]}.offsetParentMatrix")
+            cmds.connectAttr(f"{compose}.outputMatrix", f"{aim_matrix}.inputMatrix")
+
+
+            compose_aim = cmds.createNode("composeMatrix", name=f"{self.side}_{self.prefix}VariableFkAim{i+1:02d}_CM")
+            cmds.connectAttr(f"{pointOnSurface_Aim}.position", f"{compose_aim}.inputTranslate")
+            cmds.connectAttr(f"{compose_aim}.outputMatrix", f"{aim_matrix}.primaryTargetMatrix")
+            cmds.connectAttr(f"{condition}.outColorG", f"{aim_matrix}.primaryInputAxisY")
+
+            cmds.connectAttr(f"{aim_matrix}.outputMatrix", f"{ctl_grp[0]}.offsetParentMatrix")
 
 
             self.ctls.append(ctl)

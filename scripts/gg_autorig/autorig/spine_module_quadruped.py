@@ -8,6 +8,7 @@ import math
 from gg_autorig.utils.curve_tool import controller_creator
 from gg_autorig.utils.guides.guides_manager import guide_import
 from gg_autorig.utils import data_export
+from gg_autorig.utils.space_switch import fk_switch
 
 reload(data_export)
 
@@ -32,7 +33,7 @@ class SpineModule():
         self.guides_grp = self.data_exporter.get_data("basic_structure", "guides_GRP")
 
 
-    def make(self):
+    def make(self, guide_name):
         """
         Creates the spine module, including the spine chain, controllers, and various systems.
 
@@ -40,10 +41,13 @@ class SpineModule():
             self: Instance of the SpineModule class.
         """
 
+        self.guide_name = guide_name
+
         self.module_trn = cmds.createNode("transform", name=f"C_spineModule_GRP", ss=True, parent=self.modules_grp)
         self.controllers_trn = cmds.createNode("transform", name=f"C_spineControllers_GRP", ss=True, parent=self.masterWalk_ctl)
         self.skinning_trn = cmds.createNode("transform", name=f"C_spineSkinning_GRP", ss=True, p=self.skel_grp)
 
+        
         pick_matrix = cmds.createNode("pickMatrix", name="C_spinePickMatrix_PMX", ss=True)
         cmds.connectAttr(f"{self.masterWalk_ctl}.worldMatrix[0]", f"{pick_matrix}.inputMatrix")
         cmds.connectAttr(f"{pick_matrix}.outputMatrix", f"{self.module_trn}.offsetParentMatrix")
@@ -53,8 +57,10 @@ class SpineModule():
         self.data_exporter.append_data(f"C_spineModule", 
                                     {"skinning_transform": self.skinning_trn,
                                     "body_ctl": self.body_ctl,
-                                    "local_hip_ctl": self.localHip_ctl,
-                                    "local_chest_ctl": self.localChest_ctl,
+                                    "localHip": self.localHip_ctl,
+                                    "localChest": self.localChest_ctl,
+                                    "main_ctl" : self.localHip,
+                                    "end_main_ctl" : self.localChest_ctl
                                     }
                                   )
 
@@ -66,12 +72,17 @@ class SpineModule():
             self: Instance of the SpineModule class.
         """
         
-        self.guides = guide_import(f"C_spine01_GUIDE", all_descendents=True, path=None)
+        self.guides = guide_import(self.guide_name, all_descendents=True, path=None)
+
+        if cmds.attributeQuery("moduleName", node=self.guides[0], exists=True):
+            self.enum_str = cmds.attributeQuery("moduleName", node=self.guides[0], listEnum=True)[0]
+        cmds.addAttr(self.skinning_trn, longName="moduleName", attributeType="enum", enumName=self.enum_str, keyable=False)
+
 
         aim_matrix = cmds.createNode("aimMatrix", name="C_spine01Guide_AMX", ss=True)
         cmds.connectAttr(f"{self.guides[0]}.worldMatrix[0]", f"{aim_matrix}.inputMatrix")
         cmds.connectAttr(f"{self.guides[1]}.worldMatrix[0]", f"{aim_matrix}.primaryTargetMatrix")
-        cmds.setAttr(f"{aim_matrix}.primaryInputAxis", 0, 1, 0, type="double3")
+        cmds.setAttr(f"{aim_matrix}.primaryInputAxis", 0, 0, 1, type="double3")
 
         blend_matrix = cmds.createNode("blendMatrix", name="C_spine03Guide_BMX", ss=True)
         cmds.connectAttr(f"{self.guides[1]}.worldMatrix[0]", f"{blend_matrix}.inputMatrix")
@@ -88,21 +99,6 @@ class SpineModule():
         cmds.setAttr(f"{blend_matrix02}.target[0].rotateWeight", 0)
         cmds.setAttr(f"{blend_matrix02}.target[0].shearWeight", 0)
 
-        blend_matrixTan_01 = cmds.createNode("blendMatrix", name="C_spine01GuideTan_BMX", ss=True)
-        cmds.connectAttr(f"{aim_matrix}.outputMatrix", f"{blend_matrixTan_01}.inputMatrix")
-        cmds.connectAttr(f"{blend_matrix02}.outputMatrix", f"{blend_matrixTan_01}.target[0].targetMatrix")
-        cmds.setAttr(f"{blend_matrixTan_01}.target[0].weight", 0.33333)
-        cmds.setAttr(f"{blend_matrixTan_01}.target[0].scaleWeight", 0)
-        cmds.setAttr(f"{blend_matrixTan_01}.target[0].rotateWeight", 0)
-        cmds.setAttr(f"{blend_matrixTan_01}.target[0].shearWeight", 0)
-
-        blend_matrixTan_02 = cmds.createNode("blendMatrix", name="C_spine02GuideTan_BMX", ss=True)
-        cmds.connectAttr(f"{blend_matrix}.outputMatrix", f"{blend_matrixTan_02}.inputMatrix")
-        cmds.connectAttr(f"{blend_matrix02}.outputMatrix", f"{blend_matrixTan_02}.target[0].targetMatrix")
-        cmds.setAttr(f"{blend_matrixTan_02}.target[0].weight", 0.33333)
-        cmds.setAttr(f"{blend_matrixTan_02}.target[0].scaleWeight", 0)
-        cmds.setAttr(f"{blend_matrixTan_02}.target[0].rotateWeight", 0)
-        cmds.setAttr(f"{blend_matrixTan_02}.target[0].shearWeight", 0)
 
         self.main_controllers = []
         self.main_controllers_grp = []
@@ -110,21 +106,22 @@ class SpineModule():
         self.guide_matrix = [aim_matrix, blend_matrix02, blend_matrix]
 
         for i, matrix in enumerate(self.guide_matrix ):
+            name = f"Tan0{i}" if i == 1 else f"0{i+1}"
             ctl, ctl_grp = controller_creator(
-                name=f"C_spine0{i+1}",
+                name=f"C_spine{name}",
                 suffixes=["GRP", "OFF","ANM"],
                 lock=["scaleX", "scaleY", "scaleZ", "visibility"],
                 ro=True,
             )
 
-            cmds.parent(ctl_grp[0], self.main_controllers[-1] if self.main_controllers else self.controllers_trn)
+            cmds.parent(ctl_grp[0], self.main_controllers[0] if i == 2 else self.controllers_trn)
 
-            if not i == 0:
-                offset_multMatrix = cmds.createNode("multMatrix", name=f"C_spineOffset0{i+1}_MMX", ss=True)
-                inverse_matrix = cmds.createNode("inverseMatrix", name=f"C_spineOffset0{i+1}_IMX", ss=True)
+            if i == 2:
+                offset_multMatrix = cmds.createNode("multMatrix", name=f"C_spineOffset{name}_MMX", ss=True)
+                inverse_matrix = cmds.createNode("inverseMatrix", name=f"C_spineOffset{name}_IMX", ss=True)
                 cmds.connectAttr(f"{matrix}.outputMatrix", f"{offset_multMatrix}.matrixIn[0]")
 
-                cmds.connectAttr(f"{self.guide_matrix[i-1]}.outputMatrix", f"{inverse_matrix}.inputMatrix")
+                cmds.connectAttr(f"{self.guide_matrix[0]}.outputMatrix", f"{inverse_matrix}.inputMatrix")
 
                 cmds.connectAttr(f"{inverse_matrix}.outputMatrix", f"{offset_multMatrix}.matrixIn[1]")
         
@@ -134,6 +131,12 @@ class SpineModule():
                 for attr in ["tx", "ty", "tz", "rx", "ry", "rz"]:
                     cmds.setAttr(f"{ctl_grp[0]}.{attr}", 0)
 
+            elif i == 1:
+                parent_matrix = cmds.createNode("parentMatrix", name=f"C_spine{name}_PMX", ss=True)
+                cmds.connectAttr(f"{matrix}.outputMatrix", f"{parent_matrix}.inputMatrix")
+                cmds.connectAttr(f"{parent_matrix}.outputMatrix", f"{ctl_grp[0]}.offsetParentMatrix")
+
+
             else:
                 cmds.connectAttr(f"{matrix}.outputMatrix", f"{ctl_grp[0]}.offsetParentMatrix")
 
@@ -142,37 +145,8 @@ class SpineModule():
             self.main_controllers.append(ctl)
             self.main_controllers_grp.append(ctl_grp)
 
-        self.guide_matrix_tan = [blend_matrixTan_01, blend_matrixTan_02]
-
-        self.tan_controllers = []
-        self.tan_controllers_grp = []
-
-        for i, matrix in enumerate(self.guide_matrix_tan):
-            ctl, ctl_grp = controller_creator(
-                name=f"C_spine0{(i+1)*2-1}Tan",
-                suffixes=["GRP", "OFF","ANM"],
-                lock=["scaleX", "scaleY", "scaleZ", "visibility"],
-                ro=True,
-            )
-
-            cmds.parent(ctl_grp[0], self.main_controllers[i*2])
-
-            offset_multMatrix = cmds.createNode("multMatrix", name=f"C_spineOffset0{(i+1)*2-1}Tan_MMX", ss=True)
-            inverse_matrix = cmds.createNode("inverseMatrix", name=f"C_spineOffset0{(i+1)*2-1}Tan_IMX", ss=True)
-            cmds.connectAttr(f"{matrix}.outputMatrix", f"{offset_multMatrix}.matrixIn[0]")
-
-            cmds.connectAttr(f"{self.guide_matrix[i*2]}.outputMatrix", f"{inverse_matrix}.inputMatrix")
-
-            cmds.connectAttr(f"{inverse_matrix}.outputMatrix", f"{offset_multMatrix}.matrixIn[1]")
-
-
-            cmds.connectAttr(f"{offset_multMatrix}.matrixSum", f"{ctl_grp[0]}.offsetParentMatrix")
-
-            for attr in ["tx", "ty", "tz", "rx", "ry", "rz"]:
-                cmds.setAttr(f"{ctl_grp[0]}.{attr}", 0)
-
-            self.tan_controllers.append(ctl)
-            self.tan_controllers_grp.append(ctl_grp[0])
+        fk_switch(target= self.main_controllers[1], sources= [self.main_controllers[2], self.main_controllers[0]])
+        cmds.setAttr(f"{self.main_controllers[1]}.RotateValue", lock=True, keyable=False)
 
         num_joints = 5
 
@@ -191,24 +165,29 @@ class SpineModule():
             cmds.select(clear=True)
             joint = cmds.joint(name=f"C_spine0{i+1}_JNT")
             cmds.parent(joint, self.main_chain[-1] if self.main_chain else self.module_trn)
-            cmds.setAttr(f"{joint}.ty", cmds.getAttr(f"{self.twist_division}.outFloat"))
+            cmds.setAttr(f"{joint}.tz", cmds.getAttr(f"{self.twist_division}.outFloat"))
 
             self.main_chain.append(joint)
-# 
-        self.ik_handle, self.effector, self.curve = cmds.ikHandle(
-            name="C_spineIk_HDL",
-            startJoint=self.main_chain[0],
-            endEffector=self.main_chain[-1],
-            solver="ikSplineSolver",
-            numSpans=2,
-            createCurve=True,
-            parentCurve=False
-        )
+
+        point1 = cmds.xform(self.main_controllers[0], query=True, worldSpace=True, translation=True)
+        point2 = cmds.xform(self.main_controllers[1], query=True, worldSpace=True, translation=True)
+        point3 = cmds.xform(self.main_controllers[2], query=True, worldSpace=True, translation=True)
+        self.curve = cmds.curve(d=2, p=(point1,point2,point3), n="C_spine_CRV")
+        cmds.delete(self.curve, constructionHistory = True)
+
+        self.ik_handle = cmds.ikHandle(sj=self.main_chain[0], ee=self.main_chain[-1], sol="ikSplineSolver", n="C_spine_HDL", createCurve=False, curve=self.curve,parentCurve=False)[0]
+        cmds.parent(self.ik_handle, self.curve, self.module_trn)
+
+
 
         self.curve =cmds.rename(self.curve, "C_spineIkCurve_CRV")
+
+        self.parentName = cmds.listRelatives(self.curve, shapes=True)[0]
+        self.parentName = cmds.rename(self.parentName, f"{self.curve}Shape")
+
         cmds.setAttr(f"{self.curve}.inheritsTransform", 0)
 
-        for i, ctl in enumerate([self.main_controllers[0], self.tan_controllers[0], self.main_controllers[1], self.tan_controllers[1], self.main_controllers[2]]):
+        for i, ctl in enumerate([self.main_controllers[0], self.main_controllers[1], self.main_controllers[2]]):
             dcp = cmds.createNode("decomposeMatrix", name=ctl.replace("_CTL", "_DCP"), ss=True)
             cmds.connectAttr(f"{ctl}.worldMatrix[0]", f"{dcp}.inputMatrix")
             cmds.connectAttr(f"{dcp}.outputTranslate", f"{self.curve}.controlPoints[{i}]")
@@ -220,7 +199,7 @@ class SpineModule():
         self.localHip = cmds.joint(name="C_localHip_JNT")
         cmds.setAttr(f"{self.localHip}.inheritsTransform", 0)
 
-        cmds.parent(self.chest_fix, self.ik_handle,self.localHip, self.curve, self.module_trn)
+        cmds.parent(self.chest_fix, self.localHip, self.module_trn)
         self.localChest_ctl, localChest_grp = controller_creator(
             name="C_localChest",
             suffixes=["GRP", "ANM"],
@@ -300,13 +279,13 @@ class SpineModule():
 
         cmds.setAttr(f"{self.ik_handle}.dTwistControlEnable", 1) 
         cmds.setAttr(f"{self.ik_handle}.dWorldUpType", 4)
-        cmds.setAttr(f"{self.ik_handle}.dForwardAxis", 2)
-        cmds.setAttr(f"{self.ik_handle}.dWorldUpAxis", 6)
-        cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorX", 1)
-        cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorY", 0)
+        cmds.setAttr(f"{self.ik_handle}.dForwardAxis", 4)
+        cmds.setAttr(f"{self.ik_handle}.dWorldUpAxis", 0)
+        cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorX", 0)
+        cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorY", 1)
         cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorZ", 0)
-        cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorEndX", 1)
-        cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorEndY", 0)
+        cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorEndX", 0)
+        cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorEndY", 1)
         cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorEndZ", 0)
         cmds.connectAttr(f"{self.main_controllers[0]}.worldMatrix[0]", f"{self.ik_handle}.dWorldUpMatrix")
         cmds.connectAttr(f"{self.main_controllers[2]}.worldMatrix[0]", f"{self.ik_handle}.dWorldUpMatrixEnd")
@@ -366,12 +345,12 @@ class SpineModule():
         cmds.connectAttr(f"{self.body_ctl}.stretch", created_nodes[5]+".attributesBlender")
         cmds.connectAttr(f"{self.body_ctl}.stretchMax", created_nodes[2]+".maxR")
         cmds.connectAttr(f"{self.body_ctl}.stretchMin", created_nodes[2]+".minR")
-        cmds.connectAttr(f"{self.curve}.worldSpace[0]", created_nodes[0]+".inputCurve")
+        cmds.connectAttr(f"{self.parentName}.worldSpace[0]", created_nodes[0]+".inputCurve")
         cmds.connectAttr(f"{self.distance_between}.distance", f"{created_nodes[3]}.floatB")
         cmds.connectAttr(f"{self.masterWalk_ctl}.globalScale", created_nodes[3]+".floatA")
         cmds.connectAttr(f"{self.twist_division}.outFloat", f"{created_nodes[6]}.floatB")
         for joint in self.main_chain[1:]:
-            cmds.connectAttr(created_nodes[6]+".outFloat", f"{joint}.translateY")
+            cmds.connectAttr(created_nodes[6]+".outFloat", f"{joint}.translateZ")
 
         self.stretch_float_math = created_nodes[6]
 
@@ -548,7 +527,7 @@ class SpineModule():
                 suffixes=["GRP", "ANM"],
                 lock=["scaleX", "scaleY", "scaleZ", "visibility"],
                 ro=True,
-                parent=sub_spine_ctl_trn
+                parent=ctls_sub_spine[-1] if ctls_sub_spine else sub_spine_ctl_trn
             )
                 
             if i == 0:
@@ -560,8 +539,11 @@ class SpineModule():
                 else:
                     cmds.connectAttr(f"{joint}.worldMatrix[0]", f"{mmt}.matrixIn[0]")
                 cmds.connectAttr(f"{main_spine_joint[i-1]}.worldInverseMatrix[0]", f"{mmt}.matrixIn[1]")
-                cmds.connectAttr(f"{ctls_sub_spine[i-1]}.worldMatrix[0]", f"{mmt}.matrixIn[2]")
+                # cmds.connectAttr(f"{ctls_sub_spine[i-1]}.worldMatrix[0]", f"{mmt}.matrixIn[2]")
                 cmds.connectAttr(f"{mmt}.matrixSum", f"{controller_grp[0]}.offsetParentMatrix")
+                for attr in ["translateX","translateY","translateZ", "rotateX", "rotateY", "rotateZ"]:
+                    cmds.setAttr(f"{controller_grp[0]}.{attr}", 0)
+
             ctls_sub_spine.append(ctl)
 
         self.sub_spine_joints = []

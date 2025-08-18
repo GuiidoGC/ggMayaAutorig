@@ -1413,10 +1413,9 @@ class BackLegModule(LimbModule):
             {
                 "skinning_transform": self.skinnging_grp,
                 "fk_ctl": self.fk_ctls,
-                "pv_ctl": self.pv_ik_ctl,
+                "pv_ctl": self.pv_ik_ctl,   
                 "root_ctl": self.root_ik_ctl,
                 "end_ik": self.hand_ws_ik_ctl,
-
             }
         )
 
@@ -1473,10 +1472,10 @@ class ArmModule(LimbModule):
                 "pv_ctl": self.pv_ik_ctl,   
                 "root_ctl": self.root_ik_ctl,
                 "end_ik": self.hand_ws_ik_ctl,
-                "clavicle_ctl": self.scapula_ctl,
-
+                "scapula_ctl": self.scapula_ctl,
             }
         )
+
 
 class LegModule(LimbModule):
     """
@@ -1526,9 +1525,9 @@ class LegModule(LimbModule):
             {
                 "skinning_transform": self.skinnging_grp,
                 "fk_ctl": self.fk_ctls,
-                "pv_ctl": self.pv_ik_ctl,
+                "pv_ctl": self.pv_ik_ctl,   
                 "root_ctl": self.root_ik_ctl,
-                "end_ik": self.hand_ws_ik_ctl,
-
+                "end_ik": self.hand_ws_ik_ctl
             }
         )
+

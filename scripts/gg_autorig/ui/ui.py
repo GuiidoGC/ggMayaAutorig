@@ -1,22 +1,24 @@
 import os
 import json
+import re
 from PySide2 import QtWidgets, QtCore, QtGui
-from gg_autorig.utils import core
 from shiboken2 import wrapInstance
 import maya.cmds as cmds
 import maya.OpenMayaUI as omui
 import maya.api.OpenMaya as om
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from functools import partial
+from importlib import reload
 
-from gg_autorig.autorig import rig_builder_ui
-from gg_autorig.utils.guides import guide_creation_ui
+
+from gg_autorig.utils import core
+from gg_autorig.autorig import rig_builder
+from gg_autorig.utils.guides import guide_creation
 from gg_autorig.utils.guides import guides_manager
 from gg_autorig.utils import core
-from importlib import reload
-import re
-reload(rig_builder_ui)
-reload(guide_creation_ui)
+from collections import Counter
+reload(rig_builder)
+reload(guide_creation)
 reload(guides_manager)
 reload(core)
 
@@ -67,7 +69,7 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
     TOOL_NAME = "Toolbox"
 
     def __init__(self, parent=None):
-        delete_workspace_control(self.TOOL_NAME + 'WorkspaceControl')
+        delete_workspace_control(self.TOOL_NAME + "WorkspaceControl")
 
         super(GG_Toolbox, self).__init__(parent or get_maya_win())
         self.setObjectName(self.TOOL_NAME)
@@ -84,7 +86,11 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         self.create_connections()
         self.apply_stylesheet()
 
-        self.preset_combo.setCurrentIndex(1)
+        self.preset_combo.setCurrentIndex(5)
+        self.module_list.setCurrentRow(0)
+        self.module_library_selected()
+        self.mesh_selection_changed(init=True)
+
 
     def create_widgets(self):
         self.tabs = QtWidgets.QTabWidget()
@@ -102,7 +108,10 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
 
         self.preset_label = QtWidgets.QLabel("Presets:")
         self.preset_combo = QtWidgets.QComboBox()
-        self.preset_combo.addItems(["Custom", "Human", "Elephant", "Dragon", "New"])
+        self.preset_combo.addItems(["Custom", "Human", "Elephant", "Dragon", "New", "Test"])
+        self.main_mesh = QtWidgets.QLabel("Main mesh:")
+        self.main_mesh_combo = QtWidgets.QComboBox()
+        self.main_mesh_combo.addItems(["None", "Reload"])
         self.custom_path_label = QtWidgets.QLabel("Custom Guides Path:")
         self.custom_path = QtWidgets.QLineEdit()
         self.custom_path.setPlaceholderText("Enter custom path")
@@ -125,13 +134,22 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         self.module_library.setTitle("Module Library")
 
         self.module_list = QtWidgets.QListWidget()        
-        self.module_list.addItems(["Arm Module", "Front Leg Module", "Leg Module", "Back Leg Module", "Spine Module", "Neck Module", "Hand Module"])
-
-        self.extra_module_library = QtWidgets.QGroupBox()
-        self.extra_module_library.setTitle("Extra Module Library")
-
-        self.extra_module_list = QtWidgets.QListWidget()
-        self.extra_module_list.addItems(["Variable FK", "Rivet Module"])
+        self.module_list.addItems(["Arm Module", "Front Leg Module", "Leg Module", "Back Leg Module", "Spine Module", "Neck Module", "Hand Module", "Variable Fk Module", "Rivet Module"])
+        # self.module_list.setSpacing(8)
+        self.module_list.setStyleSheet("""
+            QListWidget::item {
+                padding: 6px 6px;
+                margin: 2px 0;
+                font-size: 6px;
+                min-height: 6px;
+            }
+            QListWidget::item:selected {
+                background: #4A90E2;
+                color: white;
+            }
+        """)
+        self.module_list.setMinimumHeight(350)
+        self.module_list.setMinimumWidth(200)
 
         # RIG TOOLS - Settings
         self.settings = QtWidgets.QGroupBox()
@@ -162,27 +180,15 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         self.quadruped_radio = QtWidgets.QRadioButton("Quadruped")
         self.biped_radio.setChecked(True)
 
-
-
         self.rig_type_group = QtWidgets.QButtonGroup()
         self.rig_type_group.addButton(self.biped_radio)
         self.rig_type_group.addButton(self.quadruped_radio)
 
-        self.add_guides_button = QtWidgets.QPushButton("Add Guides")
-
-        # RIG TOOLS - Extra Modules Settings
-        self.extraModules = QtWidgets.QGroupBox()
-        self.extraModules.setTitle("Extra Modules Settings")
-
-        self.extra_module_name_settings = QtWidgets.QLabel("Variable FK")
         self.extra_module_name_input = QtWidgets.QLineEdit()
         self.extra_module_name_input.setPlaceholderText("Enter module name")
 
-        self.extra_side_label = QtWidgets.QLabel("Side:")
-        self.extra_side_combo = QtWidgets.QComboBox()
-        self.extra_side_combo.addItems(["Left", "Right", "Center"])
+        self.add_guides_button = QtWidgets.QPushButton("Add Guides")
 
-        self.add_extra_guides_button = QtWidgets.QPushButton("Add Extra Guides")
 
         # Rig TOOLS - Hierarchy
         self.hierarchy = QtWidgets.QGroupBox()
@@ -261,7 +267,8 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         preset_layout = QtWidgets.QHBoxLayout()
         preset_layout.addWidget(self.preset_label)
         preset_layout.addWidget(self.preset_combo)
-        preset_layout.addWidget(self.build_rig_button)
+        preset_layout.addWidget(self.main_mesh)
+        preset_layout.addWidget(self.main_mesh_combo)
 
         custom_path_layout = QtWidgets.QHBoxLayout()
         custom_path_layout.addWidget(self.custom_path_label)
@@ -283,11 +290,6 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         module_layout.addWidget(self.module_list)
         module_layout.addStretch()
 
-        extra_modules_layout = QtWidgets.QVBoxLayout()
-        extra_modules_layout.addWidget(self.extra_module_list)
-        extra_modules_layout.addStretch()
-
-
         twist_joints_layout = QtWidgets.QHBoxLayout()
         twist_joints_layout.addWidget(self.twist_label)
         twist_joints_layout.addWidget(self.twist_input)
@@ -308,28 +310,16 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         settings_layout = QtWidgets.QVBoxLayout()
         settings_layout.addWidget(self.module_name_settings, alignment=QtCore.Qt.AlignCenter)
         settings_layout.setSpacing(20)
+        settings_layout.addWidget(self.extra_module_name_input)
         settings_layout.addLayout(twist_joints_layout)
         settings_layout.addLayout(side_layout)  
         settings_layout.addLayout(self.rig_type_layout)
         settings_layout.addLayout(controllers_quantity_h_layout)
         settings_layout.addStretch()
         settings_layout.addWidget(self.add_guides_button, alignment=QtCore.Qt.AlignCenter)
-        settings_layout.addStretch()
+        # settings_layout.addStretch()
 
-        extra_layout = QtWidgets.QVBoxLayout()
-        extra_layout.addWidget(self.extra_module_name_settings, alignment=QtCore.Qt.AlignCenter)
-        extra_layout.setSpacing(20)
-        extra_layout.addWidget(self.extra_module_name_input)
-
-        extra_layout_name_layout = QtWidgets.QHBoxLayout()
-        extra_layout_name_layout.addWidget(self.extra_side_label)
-        extra_layout_name_layout.addWidget(self.extra_side_combo)
-
-        extra_layout.addLayout(extra_layout_name_layout)
-        extra_layout.addStretch()
-        extra_layout.addWidget(self.add_extra_guides_button, alignment=QtCore.Qt.AlignCenter)
-        extra_layout.addStretch()
-
+       
         hierarchy_layout = QtWidgets.QVBoxLayout()
         hierarchy_layout.addWidget(self.tree)
         hierarchy_layout.addStretch()
@@ -343,20 +333,16 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
 
         self.configurations.setLayout(asset_layout)
         self.module_library.setLayout(module_layout)
-        self.extra_module_library.setLayout(extra_modules_layout)
         self.settings.setLayout(settings_layout)
-        self.extraModules.setLayout(extra_layout)
         self.hierarchy.setLayout(hierarchy_layout)
 
         rig_settings_layout = QtWidgets.QHBoxLayout()
         modules_v_layout = QtWidgets.QVBoxLayout()
         modules_v_layout.addWidget(self.module_library)
-        modules_v_layout.addWidget(self.extra_module_library)
         rig_settings_layout.addLayout(modules_v_layout)
         rig_settings_v_layout = QtWidgets.QVBoxLayout()
 
         rig_settings_v_layout.addWidget(self.settings)
-        rig_settings_v_layout.addWidget(self.extraModules)
 
         rig_settings_layout.addLayout(rig_settings_v_layout)
         rig_settings_layout.addWidget(self.hierarchy)
@@ -412,12 +398,56 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         self.load_guides_button.clicked.connect(self.load_guides)
         self.preset_combo.currentIndexChanged.connect(self.combo_box_changed)
         self.mirror_selected_guides.clicked.connect(self.mirror_selected_guide)
+        self.main_mesh_combo.currentIndexChanged.connect(lambda idx: self.mesh_selection_changed(init=False))
+        self.asset_name_input.editingFinished.connect(self.asset_name)
+
+    def asset_name(self):
+        core.DataManager.set_asset_name(self.asset_name_input.text().lower())
+        om.MGlobal.displayInfo(f"Asset name set to: {self.asset_name_input.text().lower()}")
 
     def build_rig(self):
         om.MGlobal.displayInfo("Building rig...")
         if self.custom_ctl_path.text():
             self.ctl_path = self.custom_ctl_path.text()
-        rig_builder_ui.make(asset_name=self.asset_name_input.text())
+        rig_builder.make(asset_name=core.DataManager.get_asset_name())
+
+    def mesh_selection_changed(self, init = False):
+
+        if init:
+            self.main_mesh_combo.clear()
+            self.main_mesh_combo.addItems(["None", "Reload"])
+            all_meshes = cmds.ls(type="mesh")
+            transforms = [cmds.listRelatives(mesh, parent=True, fullPath=False)[0] for mesh in all_meshes]
+            mesh_parents = []
+            for mesh in transforms:
+                parent = cmds.listRelatives(mesh, parent=True)
+                if parent:
+                    mesh_parents.append(parent[0])
+            if mesh_parents:
+                most_common_parent, _ = Counter(mesh_parents).most_common(1)[0]
+
+            self.main_mesh_combo.addItems(transforms)
+            for mesh in transforms:
+                if "body" in mesh:
+                    self.main_mesh_combo.setCurrentText(mesh)
+                    core.DataManager.set_mesh_data([mesh, most_common_parent])
+                    om.MGlobal.displayInfo(f"Default mesh set: {mesh}, Parent: {most_common_parent}")
+        else:
+            selected_item = self.main_mesh_combo.currentText()
+            if selected_item == "Reload":
+                self.mesh_selection_changed(init=True)
+                return
+
+            if selected_item and cmds.objExists(selected_item):
+                parent = cmds.listRelatives(selected_item, parent=True)[0]
+                core.DataManager.set_mesh_data([selected_item, parent])
+                om.MGlobal.displayInfo(f"Selected mesh: {selected_item}, Parent: {parent}")
+            elif selected_item == "None":
+                core.DataManager.set_mesh_data([None, None])
+                om.MGlobal.displayInfo("No mesh selected.")
+            else:
+                om.MGlobal.displayWarning("Selected mesh does not exist.")
+        
 
     def mirror_selected_guide(self):
 
@@ -430,10 +460,11 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
                     attr = cmds.attributeQuery("moduleName", node=item, listEnum=True)[0].split(":")[0]
                     guide_list = cmds.attributeQuery("guide_name", node=item, listEnum=True)[0].split(":")
                     side = item.split("_")[0]
-                    type_name = None
-                    joint_twist = None
                     foot_module = None
-                    controller_number = None
+                    joint_twist = None
+                    type_name = None
+                    controller_number = 1 
+                    prefix = None      
                     original_module = f"{side}_{attr}_GUIDE"
                     try:
                         joint_twist = cmds.getAttr(f"{item}.jointTwist")
@@ -441,6 +472,12 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
                         pass
                     try:
                         controller_number = cmds.getAttr(f"{item}.controllerNumber")
+                    except Exception as e:
+                        pass
+                    try:
+                        prefix_enum = cmds.attributeQuery("prefix", node=item, listEnum=True)[0]
+                        prefix_value = cmds.getAttr(f"{item}.prefix")
+                        prefix = prefix_enum.split(":")[prefix_value] if prefix_enum else ""
                     except Exception as e:
                         pass
                     try:
@@ -477,8 +514,7 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
                     elif side == "C":
                         om.MGlobal.displayError("Cannot mirror Center (C) side guides.")
                         return
-
-                    mirrored_guides = self.add_guides(mirror=[split_name + " Module", side, joint_twist, type_name, controller_number, f"{foot_module} Module"])
+                    mirrored_guides = self.add_guides(mirror=[split_name + " Module", side, joint_twist, type_name, controller_number, f"{foot_module} Module", prefix], )
 
                     for original, mirrored in zip(guide_list, mirrored_guides):
                         orig_pos = cmds.xform(original, q=True, ws=True, t=True)
@@ -506,6 +542,7 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
             self.quadruped_radio.setVisible(True)
             self.controllers_num.setVisible(False)
             self.controllers_num_input.setVisible(False)
+            self.extra_module_name_input.setVisible(False)
         elif self.selected_module == "Hand Module":
             self.rig_type_label.setVisible(False)
             self.biped_radio.setVisible(False)
@@ -514,13 +551,24 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
             self.twist_label.setVisible(False)
             self.controllers_num.setVisible(True)
             self.controllers_num_input.setVisible(True)
-        
+            self.extra_module_name_input.setVisible(False)
+        elif self.selected_module == "Variable Fk Module" or self.selected_module == "Rivet Module":
+            self.rig_type_label.setVisible(False)
+            self.biped_radio.setVisible(False)
+            self.quadruped_radio.setVisible(False)
+            self.twist_input.setVisible(True)
+            self.twist_label.setVisible(True)
+            self.controllers_num.setVisible(True)
+            self.controllers_num_input.setVisible(True)
+            self.extra_module_name_input.setVisible(True)
         else:
             self.rig_type_label.setVisible(False)
             self.biped_radio.setVisible(False)
             self.quadruped_radio.setVisible(False)
             self.controllers_num.setVisible(False)
             self.controllers_num_input.setVisible(False)
+            self.extra_module_name_input.setVisible(False)
+
 
         om.MGlobal.displayInfo(f"Selected module: {self.selected_module}")
 
@@ -571,21 +619,23 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
             controller_number = mirror[4] if mirror else self.controllers_num_input.value()
 
             limb_attr = mirror[5] if mirror else module_name
+            prefix = mirror[6] if mirror else self.extra_module_name_input.text().lower()
 
             limb_name = "foot" if limb_attr == "Leg Module" else limb_attr.split(" ")[0].lower() + "Leg"
 
             modules_map = {
-                "Arm Module": guide_creation_ui.ArmGuideCreation(side=side, twist_joints=twist_joints),
-                "Front Leg Module": guide_creation_ui.FrontLegGuideCreation(side=side, twist_joints=twist_joints),
-                "Leg Module": guide_creation_ui.LegGuideCreation(side=side, twist_joints=twist_joints),
-                "Back Leg Module": guide_creation_ui.BackLegGuideCreation(side=side, twist_joints=twist_joints),
-                "Spine Module": guide_creation_ui.SpineGuideCreation(side=side, twist_joints=twist_joints, type=type),
-                "Neck Module": guide_creation_ui.NeckGuideCreation(side=side, twist_joints=twist_joints, type=type),
-                "Hand Module": guide_creation_ui.HandGuideCreation(side=side, controller_number=controller_number)
+                "Arm Module": guide_creation.ArmGuideCreation(side=side, twist_joints=twist_joints),
+                "Front Leg Module": guide_creation.FrontLegGuideCreation(side=side, twist_joints=twist_joints),
+                "Leg Module": guide_creation.LegGuideCreation(side=side, twist_joints=twist_joints),
+                "Back Leg Module": guide_creation.BackLegGuideCreation(side=side, twist_joints=twist_joints),
+                "Spine Module": guide_creation.SpineGuideCreation(side=side, twist_joints=twist_joints, type=type),
+                "Neck Module": guide_creation.NeckGuideCreation(side=side, twist_joints=twist_joints, type=type),
+                "Hand Module": guide_creation.HandGuideCreation(side=side, controller_number=controller_number),
+                "Variable Fk Module": guide_creation.VariableFK(sides=side, quantity=controller_number, prefix=prefix, joints=twist_joints)
             }
 
             if mirror and mirror[0] == "Foot Module":
-                    a = guide_creation_ui.FootGuideCreation(side=side, limb_name=limb_name)
+                    a = guide_creation.FootGuideCreation(side=side, limb_name=limb_name)
                     self.guides = a.create_guides(guides_trn, buffers_trn)
                     return self.guides
 
@@ -595,7 +645,7 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
                 self.end_guides.append(self.guides)
                 if "Leg" in module_name and not mirror:
 
-                    guide_creation_ui.FootGuideCreation(side=side, limb_name=limb_name).create_guides(guides_trn, buffers_trn)
+                    guide_creation.FootGuideCreation(side=side, limb_name=limb_name).create_guides(guides_trn, buffers_trn)
 
                 parent_item = None
 
@@ -604,6 +654,10 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
                     name = words[0].lower() + ''.join(w.capitalize() for w in words[1:])
                 else:
                     name = module_name.replace(" Module", "").lower()
+
+                if name == "variableFk":
+                    # Capitalize only the first letter, keep the rest as is
+                    name = prefix + name[:1].upper() + name[1:]
 
                 item = QtWidgets.QTreeWidgetItem([f"{side}_{name}_GUIDE"])
 
@@ -709,6 +763,8 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
 
                 om.MGlobal.displayInfo(f"Guides path set: {core.DataManager.get_guide_data()}")
                 om.MGlobal.displayInfo(f"Controllers path set: {core.DataManager.get_ctls_data()}")
+            elif not guides_path_check:
+                self.browse_custom_path(type="Guides")
             else:
                 om.MGlobal.displayError("One or more custom paths are invalid.")
             
@@ -719,12 +775,15 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
             ctls_path = os.path.join(ctls_path, "body_template_01.ctls")
 
         elif self.preset_combo.currentText() == "Elephant":
-            guides_path = os.path.join(guides_path,  "elephant_01.guides")
-            ctls_path = os.path.join(ctls_path, "elephant_01.ctls")
+            guides_path = os.path.join(guides_path,  "elephant_03.guides")
+            ctls_path = os.path.join(ctls_path, "elephant_02.ctls")
 
         elif self.preset_combo.currentText() == "Dragon":
             guides_path = os.path.join(guides_path,  "dragon_01.guides")
             ctls_path = os.path.join(ctls_path, "dragon_01.ctls")
+        elif self.preset_combo.currentText() == "Test":
+            guides_path = os.path.join(guides_path,  "test_04.guides")
+            ctls_path = os.path.join(ctls_path, "test_01.ctls")
 
         elif self.preset_combo.currentText() == "New":
             template_name = self.asset_name_input.text().lower() + "_01"
@@ -752,15 +811,15 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
 
     def custom_guide_added(self):
 
-        guide_creation_ui.load_guides()
+        guide_creation.load_guides()
 
     def custom_controller_added(self):
 
-        guide_creation_ui.load_guides()
+        guide_creation.load_guides()
 
     def load_guides(self):
 
-        guide_creation_ui.load_guides()
+        guide_creation.load_guides()
 
         final_path = core.init_template_file(ext=".guides", export=False)
 
@@ -783,7 +842,6 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         self.tree.setHeaderHidden(True)
         for branch in skelTree:
             add_items(self.tree.invisibleRootItem(), branch)
-
 
     def toggle_display_handle(self):
         selected = cmds.ls(selection=True)
@@ -876,6 +934,26 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
                 if self.preset_combo.currentText() == "Custom":
                     core.DataManager.set_guide_data(file_path)
                     om.MGlobal.displayInfo(f"Custom guides path set: {file_path}")
+
+                    guides_path = core.init_template_file(ext=".guides", export=False)
+        
+                    with open(guides_path, "r") as f:
+                        guides_data = json.load(f)
+
+
+
+                    name = next(iter(guides_data))
+                    controls_path = guides_data.get("controls", [])
+                    meshes_path = guides_data.get("meshes", [])
+
+                    core.DataManager.set_mesh_data(meshes_path)
+                    core.DataManager.set_asset_name(name)
+                    core.DataManager.set_ctls_data(controls_path)
+
+                    self.asset_name_input.setText(name)
+                    self.custom_ctl_path_input.setText(controls_path)
+                    self.main_mesh_combo.setCurrentText(meshes_path[0])
+
             elif type == "CTLS":
                 self.custom_ctl_path_input.setText(file_path)
                 if self.preset_combo.currentText() == "Custom":

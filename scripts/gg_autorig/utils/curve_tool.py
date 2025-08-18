@@ -273,6 +273,17 @@ def controller_creator(name, suffixes=["GRP", "ANM"], mirror=False, parent=None,
         ctl = build_curves_from_template(f"{name}_{prefix}", path = TEMPLATE_FILE)
 
         if not ctl:
+            # if name == "C_preferences":
+            #     ctl = text_curve(f"L_aaaa_CTL")
+            #     print(ctl)
+            #     cvs = cmds.ls(ctl + ".cv[*]", fl=True)
+            #     cmds.move(0, 10, 0, cvs, r=True, ws=True)
+
+            #     # cmds.setAttr(ctl + ".lineWidth", 1.5)
+            #     cmds.setAttr(ctl + ".overrideEnabled", 1)
+            #     cmds.setAttr(ctl + ".overrideColor", 14)
+            #     ctl = [ctl]
+            # else:
             ctl = cmds.circle(name=f"{name}_{prefix}", ch=False)
         else:
             ctl = [ctl[0]]
@@ -410,6 +421,46 @@ def mirror_shapes():
 
         print(f"Mirrored {len(src_shapes)} shapes from {src} → {tgt}")
 
+
+def text_curve(ctl_name):
+    """
+    Creates a text curve for a given controller name and letter.
+
+    Args:
+        ctl_name (str): The name of the controller.
+        letter (str): The letter to use for the text curve.
+
+    Returns:
+        str: The name of the created text curve.
+    """
+    letter = ctl_name.split("_")[1][0].upper()
+    text_curve = cmds.textCurves(ch=False, t=letter)
+    text_curve = cmds.rename(text_curve, ctl_name)
+    relatives = cmds.listRelatives(text_curve, allDescendents=True, type="nurbsCurve")
+    for i, relative in enumerate(relatives):
+        cmds.parent(relative, text_curve, r=True, shape=True)
+        cmds.rename(relative, f"{ctl_name}Shape{i+1:02d}")
+    relatives_transforms = cmds.listRelatives(text_curve, allDescendents=True, type="transform")
+    cmds.delete(relatives_transforms)
+
+    pivot_world = cmds.xform(text_curve, q=True, ws=True, rp=True)
+    
+    cvs = cmds.ls(text_curve + ".cv[*]", fl=True)
+    
+    positions = [cmds.pointPosition(cv, w=True) for cv in cvs]
+    
+    avg_x = sum(p[0] for p in positions) / len(positions)
+    avg_y = sum(p[1] for p in positions) / len(positions)
+    avg_z = sum(p[2] for p in positions) / len(positions)
+    center_cvs = (avg_x, avg_y, avg_z)
+    
+    offset = [pivot_world[0] - center_cvs[0],
+            pivot_world[1] - center_cvs[1],
+            pivot_world[2] - center_cvs[2]]
+    
+    cmds.move(offset[0], offset[1], offset[2], cvs, r=True, ws=True)
+
+    return text_curve
 
 # get_all_ctl_curves_data()
 # mirror_shapes()

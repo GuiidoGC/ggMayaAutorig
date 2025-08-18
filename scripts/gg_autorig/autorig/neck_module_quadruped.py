@@ -32,13 +32,15 @@ class NeckModule():
         self.guides_grp = self.data_exporter.get_data("basic_structure", "guides_GRP")
 
 
-    def make(self):
+    def make(self, guide_name):
         """
         Creates the neck module, including the neck chain, controllers, and various systems.
 
         Args:
             self: Instance of the SpineModule class.
         """
+
+        self.guide_name = guide_name
 
         self.module_trn = cmds.createNode("transform", name=f"C_neckModule_GRP", ss=True, parent=self.modules_grp)
         self.controllers_trn = cmds.createNode("transform", name=f"C_neckControllers_GRP", ss=True, parent=self.masterWalk_ctl)
@@ -52,6 +54,10 @@ class NeckModule():
 
         self.data_exporter.append_data(f"C_neckModule", 
                                     {"skinning_transform": self.skinning_trn,
+                                     "neck_ctl": self.main_controllers[0],
+                                     "head_ctl": self.main_controllers[1],
+                                     "main_ctl" : self.main_controllers[0],
+                                     "end_main_ctl" : self.main_controllers[1]
                                     }
                                   )
 
@@ -63,12 +69,16 @@ class NeckModule():
             self: Instance of the SpineModule class.
         """
         
-        self.guides = guide_import(f"C_neck_GUIDE", all_descendents=True, path=None)
+        self.guides = guide_import(self.guide_name, all_descendents=True, path=None)
+
+        if cmds.attributeQuery("moduleName", node=self.guides[0], exists=True):
+            self.enum_str = cmds.attributeQuery("moduleName", node=self.guides[0], listEnum=True)[0]
+        cmds.addAttr(self.skinning_trn, longName="moduleName", attributeType="enum", enumName=self.enum_str, keyable=False)
 
         aim_matrix = cmds.createNode("aimMatrix", name="C_neck01Guide_AMX", ss=True)
         cmds.connectAttr(f"{self.guides[0]}.worldMatrix[0]", f"{aim_matrix}.inputMatrix")
         cmds.connectAttr(f"{self.guides[1]}.worldMatrix[0]", f"{aim_matrix}.primaryTargetMatrix")
-        cmds.setAttr(f"{aim_matrix}.primaryInputAxis", 0, 1, 0, type="double3")
+        cmds.setAttr(f"{aim_matrix}.primaryInputAxis", 0, 0, 1, type="double3")
 
         blend_matrix = cmds.createNode("blendMatrix", name="C_headGuide_BMX", ss=True)
         cmds.connectAttr(f"{self.guides[1]}.worldMatrix[0]", f"{blend_matrix}.inputMatrix")
@@ -76,6 +86,7 @@ class NeckModule():
         cmds.setAttr(f"{blend_matrix}.target[0].scaleWeight", 0)
         cmds.setAttr(f"{blend_matrix}.target[0].translateWeight", 0)
         cmds.setAttr(f"{blend_matrix}.target[0].shearWeight", 0)
+        cmds.setAttr(f"{blend_matrix}.target[0].rotateWeight", 0)
 
    
         self.main_controllers = []
@@ -119,18 +130,20 @@ class NeckModule():
             cmds.select(clear=True)
             joint = cmds.joint(name=f"C_neck0{i+1}_JNT")
             cmds.parent(joint, self.main_chain[-1] if self.main_chain else self.module_trn)
-            cmds.setAttr(f"{joint}.ty", cmds.getAttr(f"{self.twist_division}.outFloat"))
+            cmds.setAttr(f"{joint}.tz", cmds.getAttr(f"{self.twist_division}.outFloat"))
 
             self.main_chain.append(joint)
 
-            point1 = cmds.xform(self.main_controllers[0], query=True, worldSpace=True, translation=True)
-            point2 = cmds.xform(self.main_controllers[1], query=True, worldSpace=True, translation=True)
+        point1 = cmds.xform(self.main_controllers[0], query=True, worldSpace=True, translation=True)
+        point2 = cmds.xform(self.main_controllers[1], query=True, worldSpace=True, translation=True)
         self.curve = cmds.curve(d=1, p=(point1,point2), n="C_neck_CRV")
         cmds.delete(self.curve, constructionHistory = True)
 
         self.ik_handle = cmds.ikHandle(sj=self.main_chain[0], ee=self.main_chain[-1], sol="ikSplineSolver", n="C_neck_HDL", createCurve=False, curve=self.curve,parentCurve=False)[0]
         cmds.parent(self.ik_handle, self.curve, self.module_trn)
 
+        self.parentName = cmds.listRelatives(self.curve, shapes=True)[0]
+        self.parentName = cmds.rename(self.parentName, f"{self.curve}Shape")
 
         cmds.setAttr(f"{self.curve}.inheritsTransform", 0)
 
@@ -144,13 +157,13 @@ class NeckModule():
 
         cmds.setAttr(f"{self.ik_handle}.dTwistControlEnable", 1) 
         cmds.setAttr(f"{self.ik_handle}.dWorldUpType", 4)
-        cmds.setAttr(f"{self.ik_handle}.dForwardAxis", 2)
-        cmds.setAttr(f"{self.ik_handle}.dWorldUpAxis", 6)
-        cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorX", 1)
-        cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorY", 0)
+        cmds.setAttr(f"{self.ik_handle}.dForwardAxis", 4)
+        cmds.setAttr(f"{self.ik_handle}.dWorldUpAxis", 0)
+        cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorX", 0)
+        cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorY", 1)
         cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorZ", 0)
-        cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorEndX", 1)
-        cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorEndY", 0)
+        cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorEndX", 0)
+        cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorEndY", 1)
         cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorEndZ", 0)
         cmds.connectAttr(f"{self.main_controllers[0]}.worldMatrix[0]", f"{self.ik_handle}.dWorldUpMatrix")
         cmds.connectAttr(f"{self.main_controllers[1]}.worldMatrix[0]", f"{self.ik_handle}.dWorldUpMatrixEnd")
@@ -210,14 +223,14 @@ class NeckModule():
         cmds.connectAttr(f"{self.main_controllers[1]}.stretch", created_nodes[5]+".attributesBlender")
         cmds.connectAttr(f"{self.main_controllers[1]}.stretchMax", created_nodes[2]+".maxR")
         cmds.connectAttr(f"{self.main_controllers[1]}.stretchMin", created_nodes[2]+".minR")
-        cmds.connectAttr(f"{self.curve}.worldSpace[0]", created_nodes[0]+".inputCurve")
+        cmds.connectAttr(f"{self.parentName}.worldSpace[0]", created_nodes[0]+".inputCurve")
         cmds.connectAttr(f"{self.distance_between}.distance", f"{created_nodes[3]}.floatB")
         cmds.connectAttr(f"{self.masterWalk_ctl}.globalScale", created_nodes[3]+".floatA")
         cmds.connectAttr(f"{self.twist_division}.outFloat", f"{created_nodes[6]}.floatB")
         for i, joint in enumerate(self.main_chain[1:]):
             if i == len(self.main_chain)-2:
                 cmds.connectAttr(f"{self.controllers_dcp[1]}.outputRotate", f"{joint}.rotate")
-            cmds.connectAttr(created_nodes[6]+".outFloat", f"{joint}.translateY")
+            cmds.connectAttr(created_nodes[6]+".outFloat", f"{joint}.translateZ")
 
         self.stretch_float_math = created_nodes[6]
 
@@ -387,6 +400,7 @@ class NeckModule():
         sub_neck_ctl_trn = cmds.createNode("transform", n="C_subNeckControllers_GRP", parent=self.masterWalk_ctl)
         cmds.setAttr(f"{sub_neck_ctl_trn}.inheritsTransform", 0)
         cmds.connectAttr(f"{self.main_controllers[1]}.attachedFKVis", f"{sub_neck_ctl_trn}.visibility")
+
         for i, joint in enumerate(main_neck_joint):
             
             ctl, controller_grp = controller_creator(
@@ -394,20 +408,42 @@ class NeckModule():
                 suffixes=["GRP", "ANM"],
                 lock=["scaleX", "scaleY", "scaleZ", "visibility"],
                 ro=True,
-                parent=sub_neck_ctl_trn
+                parent=ctls_sub_neck[-1] if ctls_sub_neck else sub_neck_ctl_trn
             )
                 
             if i == 0:
                 cmds.connectAttr(f"{joint}.worldMatrix[0]", f"{controller_grp[0]}.offsetParentMatrix")
+
+            elif i == len(main_neck_joint)-1:
+                blendMatrix = cmds.createNode("blendMatrix", n=f"C_neckSubAttachedFk0{i+1}_BMX")
+                mmt = cmds.createNode("multMatrix", n=f"C_neckSubAttachedFk0{i+1}_MMT")
+
+                cmds.connectAttr(f"{joint}.worldMatrix[0]", f"{blendMatrix}.inputMatrix")
+                cmds.connectAttr(f"{self.main_controllers[1]}.worldMatrix[0]", f"{blendMatrix}.target[0].targetMatrix")
+                cmds.setAttr(f"{blendMatrix}.target[0].translateWeight", 0)
+                cmds.setAttr(f"{blendMatrix}.target[0].shearWeight", 0)
+
+
+
+                cmds.connectAttr(f"{main_neck_joint[i-1]}.worldInverseMatrix[0]", f"{mmt}.matrixIn[1]")
+                cmds.connectAttr(f"{blendMatrix}.outputMatrix", f"{mmt}.matrixIn[0]")
+                cmds.connectAttr(f"{mmt}.matrixSum", f"{controller_grp[0]}.offsetParentMatrix")
+
+                for attr in ["translateX","translateY","translateZ", "rotateX", "rotateY", "rotateZ"]:
+                    cmds.setAttr(f"{controller_grp[0]}.{attr}", 0)
+
+
+
             else:
                 mmt = cmds.createNode("multMatrix", n=f"C_neckSubAttachedFk0{i+1}_MMT")
-                # if i == len(self.main_chain)-1:
-                #     cmds.connectAttr(f"{self.chest_fix}.worldMatrix[0]", f"{mmt}.matrixIn[0]")
-                # else:
+
                 cmds.connectAttr(f"{joint}.worldMatrix[0]", f"{mmt}.matrixIn[0]")
                 cmds.connectAttr(f"{main_neck_joint[i-1]}.worldInverseMatrix[0]", f"{mmt}.matrixIn[1]")
-                cmds.connectAttr(f"{ctls_sub_neck[i-1]}.worldMatrix[0]", f"{mmt}.matrixIn[2]")
                 cmds.connectAttr(f"{mmt}.matrixSum", f"{controller_grp[0]}.offsetParentMatrix")
+
+                for attr in ["translateX","translateY","translateZ", "rotateX", "rotateY", "rotateZ"]:
+                    cmds.setAttr(f"{controller_grp[0]}.{attr}", 0)
+
             ctls_sub_neck.append(ctl)
 
         self.sub_neck_joints = []

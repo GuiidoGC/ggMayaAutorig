@@ -1,9 +1,6 @@
 import os
 import maya.cmds as cmds
-from importlib import reload
 from maya.api import OpenMaya as om
-
-# def init_template_file(path=None, file_name = "test_", ext=".guides", export=True):
 
 class DataManager:
     _ctls_data = None
@@ -24,6 +21,22 @@ class DataManager:
     @classmethod
     def get_guide_data(cls):
         return cls._guide_data
+    
+    @classmethod
+    def set_mesh_data(cls, data):
+        cls._mesh_data = data
+
+    @classmethod
+    def get_mesh_data(cls):
+        return cls._mesh_data
+    
+    @classmethod
+    def set_asset_name(cls, data):
+        cls._asset_name = data
+
+    @classmethod
+    def get_asset_name(cls):
+        return cls._asset_name
 
 
 def init_template_file(ext=".guides", export=True):

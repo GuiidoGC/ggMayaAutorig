@@ -36,4 +36,3 @@ def parented_chain():
             cmds.connectAttr(obj[i] + ".worldMatrix[0]", joint + ".offsetParentMatrix", force=True)
 
 
-parented_chain()

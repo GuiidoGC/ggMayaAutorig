@@ -41,6 +41,8 @@ class NeckModule():
         """
 
         self.guide_name = guide_name
+        
+
 
         self.module_trn = cmds.createNode("transform", name=f"C_neckModule_GRP", ss=True, parent=self.modules_grp)
         self.controllers_trn = cmds.createNode("transform", name=f"C_neckControllers_GRP", ss=True, parent=self.masterWalk_ctl)
@@ -56,6 +58,8 @@ class NeckModule():
                                     {"skinning_transform": self.skinning_trn,
                                      "neck_ctl": self.main_controllers[0],
                                      "head_ctl": self.main_controllers[1],
+                                     "main_ctl" : self.main_controllers[0],
+                                     "end_main_ctl" : self.main_controllers[1]
                                     }
                                   )
 
@@ -76,7 +80,8 @@ class NeckModule():
         aim_matrix = cmds.createNode("aimMatrix", name="C_neck01Guide_AMX", ss=True)
         cmds.connectAttr(f"{self.guides[0]}.worldMatrix[0]", f"{aim_matrix}.inputMatrix")
         cmds.connectAttr(f"{self.guides[1]}.worldMatrix[0]", f"{aim_matrix}.primaryTargetMatrix")
-        cmds.setAttr(f"{aim_matrix}.primaryInputAxis", 0, 0, 1, type="double3")
+        cmds.setAttr(f"{aim_matrix}.primaryInputAxis", 0, 1, 0, type="double3")
+        cmds.setAttr(f"{aim_matrix}.secondaryInputAxis", 0, 0, 1, type="double3")
 
         blend_matrix = cmds.createNode("blendMatrix", name="C_headGuide_BMX", ss=True)
         cmds.connectAttr(f"{self.guides[1]}.worldMatrix[0]", f"{blend_matrix}.inputMatrix")
@@ -128,7 +133,7 @@ class NeckModule():
             cmds.select(clear=True)
             joint = cmds.joint(name=f"C_neck0{i+1}_JNT")
             cmds.parent(joint, self.main_chain[-1] if self.main_chain else self.module_trn)
-            cmds.setAttr(f"{joint}.tz", cmds.getAttr(f"{self.twist_division}.outFloat"))
+            cmds.setAttr(f"{joint}.ty", cmds.getAttr(f"{self.twist_division}.outFloat"))
 
             self.main_chain.append(joint)
 
@@ -155,14 +160,14 @@ class NeckModule():
 
         cmds.setAttr(f"{self.ik_handle}.dTwistControlEnable", 1) 
         cmds.setAttr(f"{self.ik_handle}.dWorldUpType", 4)
-        cmds.setAttr(f"{self.ik_handle}.dForwardAxis", 4)
-        cmds.setAttr(f"{self.ik_handle}.dWorldUpAxis", 0)
+        cmds.setAttr(f"{self.ik_handle}.dForwardAxis", 2)
+        cmds.setAttr(f"{self.ik_handle}.dWorldUpAxis", 3)
         cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorX", 0)
-        cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorY", 1)
-        cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorZ", 0)
+        cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorY", 0)
+        cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorZ", 1)
         cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorEndX", 0)
-        cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorEndY", 1)
-        cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorEndZ", 0)
+        cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorEndY", 0)
+        cmds.setAttr(f"{self.ik_handle}.dWorldUpVectorEndZ", 1)
         cmds.connectAttr(f"{self.main_controllers[0]}.worldMatrix[0]", f"{self.ik_handle}.dWorldUpMatrix")
         cmds.connectAttr(f"{self.main_controllers[1]}.worldMatrix[0]", f"{self.ik_handle}.dWorldUpMatrixEnd")
 
@@ -228,7 +233,7 @@ class NeckModule():
         for i, joint in enumerate(self.main_chain[1:]):
             if i == len(self.main_chain)-2:
                 cmds.connectAttr(f"{self.controllers_dcp[1]}.outputRotate", f"{joint}.rotate")
-            cmds.connectAttr(created_nodes[6]+".outFloat", f"{joint}.translateZ")
+            cmds.connectAttr(created_nodes[6]+".outFloat", f"{joint}.translateY")
 
         self.stretch_float_math = created_nodes[6]
 

@@ -1,0 +1,420 @@
+{
+    "test_04": {
+        "C_trunkVariableFK015_GUIDE": {
+            "worldPosition": [
+                0.0,
+                -14.66443432617192,
+                228.28758239746094
+            ],
+            "parent": "C_trunkVariableFK014_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_trunkVariableFK014_GUIDE": {
+            "worldPosition": [
+                0.0,
+                0.05256567382808086,
+                228.28758239746094
+            ],
+            "parent": "C_trunkVariableFK013_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_trunkVariableFK013_GUIDE": {
+            "worldPosition": [
+                0.0,
+                14.769565673828081,
+                228.28758239746094
+            ],
+            "parent": "C_trunkVariableFK012_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_trunkVariableFK012_GUIDE": {
+            "worldPosition": [
+                0.0,
+                29.486565673828082,
+                228.28758239746094
+            ],
+            "parent": "C_trunkVariableFK011_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_trunkVariableFK011_GUIDE": {
+            "worldPosition": [
+                0.0,
+                44.20356567382808,
+                228.28758239746094
+            ],
+            "parent": "C_trunkVariableFK010_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_trunkVariableFK010_GUIDE": {
+            "worldPosition": [
+                0.0,
+                58.92056567382808,
+                228.28758239746094
+            ],
+            "parent": "C_trunkVariableFK009_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_trunkVariableFK009_GUIDE": {
+            "worldPosition": [
+                0.0,
+                73.63756567382808,
+                228.28758239746094
+            ],
+            "parent": "C_trunkVariableFK008_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_trunkVariableFK008_GUIDE": {
+            "worldPosition": [
+                0.0,
+                88.35456567382808,
+                228.28758239746094
+            ],
+            "parent": "C_trunkVariableFK007_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_trunkVariableFK007_GUIDE": {
+            "worldPosition": [
+                0.0,
+                103.07156567382808,
+                228.28758239746094
+            ],
+            "parent": "C_trunkVariableFK006_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_trunkVariableFK006_GUIDE": {
+            "worldPosition": [
+                0.0,
+                117.78856567382807,
+                228.28758239746094
+            ],
+            "parent": "C_trunkVariableFK005_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_trunkVariableFK005_GUIDE": {
+            "worldPosition": [
+                0.0,
+                132.50556567382807,
+                228.28758239746094
+            ],
+            "parent": "C_trunkVariableFK004_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_trunkVariableFK004_GUIDE": {
+            "worldPosition": [
+                0.0,
+                147.2225656738281,
+                228.28758239746094
+            ],
+            "parent": "C_trunkVariableFK003_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_trunkVariableFK003_GUIDE": {
+            "worldPosition": [
+                0.0,
+                161.9395656738281,
+                228.28758239746094
+            ],
+            "parent": "C_trunkVariableFK002_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_trunkVariableFK002_GUIDE": {
+            "worldPosition": [
+                0.0,
+                176.6565656738281,
+                228.28758239746094
+            ],
+            "parent": "C_trunkVariableFK001_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_trunkVariableFK001_GUIDE": {
+            "worldPosition": [
+                0.0,
+                191.37356567382812,
+                228.28758239746094
+            ],
+            "parent": "guides_GRP",
+            "jointTwist": 15.0,
+            "type": "Child",
+            "moduleName": "variableFk",
+            "prefix": "trunk"
+        },
+        "C_tailVariableFK015_GUIDE": {
+            "worldPosition": [
+                0.0,
+                -189.5912388212605,
+                -247.50628933059025
+            ],
+            "parent": "C_tailVariableFK014_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK014_GUIDE": {
+            "worldPosition": [
+                0.0,
+                -162.7311411834816,
+                -247.50628933059025
+            ],
+            "parent": "C_tailVariableFK013_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK013_GUIDE": {
+            "worldPosition": [
+                0.0,
+                -135.87104354570272,
+                -247.50628933059025
+            ],
+            "parent": "C_tailVariableFK012_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK012_GUIDE": {
+            "worldPosition": [
+                0.0,
+                -109.01094590792383,
+                -247.50628933059025
+            ],
+            "parent": "C_tailVariableFK011_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK011_GUIDE": {
+            "worldPosition": [
+                0.0,
+                -82.15084827014493,
+                -247.50628933059025
+            ],
+            "parent": "C_tailVariableFK010_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK010_GUIDE": {
+            "worldPosition": [
+                0.0,
+                -55.29075063236604,
+                -247.50628933059025
+            ],
+            "parent": "C_tailVariableFK009_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK009_GUIDE": {
+            "worldPosition": [
+                0.0,
+                -28.43065299458715,
+                -247.50628933059025
+            ],
+            "parent": "C_tailVariableFK008_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK008_GUIDE": {
+            "worldPosition": [
+                0.0,
+                -1.5705553568082564,
+                -247.50628933059025
+            ],
+            "parent": "C_tailVariableFK007_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK007_GUIDE": {
+            "worldPosition": [
+                0.0,
+                25.289542280970636,
+                -247.50628933059025
+            ],
+            "parent": "C_tailVariableFK006_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK006_GUIDE": {
+            "worldPosition": [
+                0.0,
+                52.14963991874953,
+                -247.50628933059025
+            ],
+            "parent": "C_tailVariableFK005_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK005_GUIDE": {
+            "worldPosition": [
+                0.0,
+                79.00973755652842,
+                -247.50628933059025
+            ],
+            "parent": "C_tailVariableFK004_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK004_GUIDE": {
+            "worldPosition": [
+                0.0,
+                105.86983519430731,
+                -247.50628933059025
+            ],
+            "parent": "C_tailVariableFK003_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK003_GUIDE": {
+            "worldPosition": [
+                0.0,
+                132.7299328320862,
+                -247.50628933059025
+            ],
+            "parent": "C_tailVariableFK002_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK002_GUIDE": {
+            "worldPosition": [
+                0.0,
+                159.5900304698651,
+                -247.50628933059025
+            ],
+            "parent": "C_tailVariableFK001_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK001_GUIDE": {
+            "worldPosition": [
+                0.0,
+                186.450128107644,
+                -247.50628933059025
+            ],
+            "parent": "guides_GRP",
+            "jointTwist": 15.0,
+            "type": "Child",
+            "moduleName": "variableFk",
+            "prefix": "tail"
+        },
+        "C_spine02_GUIDE": {
+            "worldPosition": [
+                0.0,
+                244.3616300382107,
+                25.084018553619345
+            ],
+            "parent": "C_spine01_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_spine01_GUIDE": {
+            "worldPosition": [
+                0.0,
+                244.3616300382107,
+                -120.58697481948415
+            ],
+            "parent": "guides_GRP",
+            "jointTwist": 5.0,
+            "type": 1,
+            "moduleName": "spine",
+            "prefix": "Child"
+        },
+        "C_localHip_GUIDE": {
+            "worldPosition": [
+                0.0,
+                212.5258464873692,
+                -158.0094936432113
+            ],
+            "parent": "guides_GRP",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        }
+    },
+    "hierarchy": [
+        {
+            "C_root_GUIDE": [
+                {
+                    "C_spine_GUIDE": [
+                        {
+                            "C_localHip_GUIDE": [
+                                {
+                                    "C_tailVariableFk_GUIDE": []
+                                }
+                            ]
+                        },
+                        {
+                            "C_trunkVariableFk_GUIDE": []
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -154,7 +154,6 @@ def fk_switch(target, sources = [], default_rotate = 1, default_translate = 1):
     
     cmds.setAttr(f"{target_grp}.inheritsTransform", 0)
 
-
     connections = cmds.listConnections(f"{target_grp}.offsetParentMatrix", plugs=True, source=True, destination=False)[0]
 
     data_exporter = data_export.DataExport()
@@ -249,7 +248,6 @@ def make_spaces_quadruped():
     head = data_exporter.get_data("C_neckModule", "head_ctl")
 
     trunk = data_exporter.get_data("C_trunkModule", "main_ctl")
-    print(f"Trunk: {trunk}")
 
     fk_switch(target=trunk, sources=[head, local_chest_ctl, body_ctl], default_rotate=1, default_translate=1)
     fk_switch(target=neck, sources=[local_chest_ctl, body_ctl])

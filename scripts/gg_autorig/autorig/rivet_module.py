@@ -34,7 +34,6 @@ def river_joint(mesh = "C_body_MSH", guide_name = ""):
 
     individual_module_grp = cmds.createNode("transform", name=f"{name}Module_GRP", parent=modules_grp, ss=True)
     skinnging_grp = data_exporter.get_data("rivet_module", "skinningJoints_GRP")
-    print(f"Skinning Joints Group: {skinnging_grp}")
     if not skinnging_grp:
         skinnging_grp = cmds.createNode("transform", name=f"{name}ModuleJoints_GRP", parent=skel_grp, ss=True)
 

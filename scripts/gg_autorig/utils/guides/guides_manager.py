@@ -16,7 +16,7 @@ def guides_export(skelTree = None):
         TEMPLATE_FILE = core.init_template_file(ext=".guides")
         print(f"Exporting guides to {TEMPLATE_FILE}")
         
-        guides_folder = cmds.ls(sl=True) or cmds.ls("guides_GRP", type="transform")
+        guides_folder = cmds.ls("guides_GRP", type="transform")
 
         if guides_folder:
                 guides_descendents = [
@@ -34,6 +34,7 @@ def guides_export(skelTree = None):
                 guides_joint_twist = []
                 guides_type = []
                 guides_module_name = []
+                guides_prefix_name = []
 
                 for guide in guides_descendents:
                         # Try to get 'jointTwist' attribute, if not present, set value as 'Child'
@@ -59,6 +60,16 @@ def guides_export(skelTree = None):
                         else:
                                 module_name = "Child"
                         guides_module_name.append(module_name)
+                        
+
+                        if cmds.attributeQuery("prefix", node=guide, exists=True):
+                                index = cmds.getAttr(f"{guide}.prefix")
+                                enum_string = cmds.addAttr(f"{guide}.prefix", q=True, en=True)
+                                enum_list = enum_string.split(":")
+                                prefix_name = enum_list[index]  
+                        else:
+                                prefix_name = "Child"
+                        guides_prefix_name.append(prefix_name)
 
 
 
@@ -66,9 +77,13 @@ def guides_export(skelTree = None):
                 om.MGlobal.displayError("No guides found in the scene.")
                 return
         
-        guides_name = os.path.splitext(os.path.basename(TEMPLATE_FILE))[0]
+        guides_name = core.DataManager.get_asset_name() if core.DataManager.get_asset_name() else os.path.splitext(os.path.basename(TEMPLATE_FILE))[0]
+        ctl_path = core.DataManager.get_ctls_data() if core.DataManager.get_ctls_data() else None
+        mesh_path = core.DataManager.get_mesh_data() if core.DataManager.get_mesh_data() else None
 
         guides_data = {guides_name: {},
+                       "controls": ctl_path,
+                       "meshes": mesh_path,
                        "hierarchy": skelTree
                        }
 
@@ -78,7 +93,8 @@ def guides_export(skelTree = None):
                         "parent": guides_parents[i],
                         "jointTwist": guides_joint_twist[i],
                         "type": guides_type[i],
-                        "moduleName": guides_module_name[i]
+                        "moduleName": guides_module_name[i],
+                        "prefix": guides_prefix_name[i]
                 }
 
 
@@ -96,7 +112,7 @@ def get_data(name, module_name=False):
             guides_data = json.load(infile)
     except Exception as e:
         if module_name:
-            return None, None, None
+            return None, None, None, None
         else:
             return None, None
 
@@ -109,11 +125,12 @@ def get_data(name, module_name=False):
                 parent = guide_info.get("parent")
                 if module_name:
                         moduleName = guide_info.get("moduleName")
-                        return world_position, parent, moduleName
+                        prefix = guide_info.get("prefix")
+                        return world_position, parent, moduleName, prefix
                 else:
                     return world_position, parent
     if module_name:
-        return None, None, None 
+        return None, None, None, None
     else:
         return None, None
 
@@ -143,13 +160,15 @@ def guide_import(joint_name, all_descendents=True, path=None):
         if all_descendents:
                 
                 if all_descendents is True:
-                        world_position, parent, moduleName = get_data(joint_name, module_name=True)
+                        world_position, parent, moduleName, prefix = get_data(joint_name, module_name=True)
                         guide_transform = cmds.createNode('transform', name=joint_name)
                         cmds.xform(guide_transform, ws=True, t=world_position)
                         cmds.parent(guide_transform, guide_grp)
                         transforms_chain_export.append(guide_transform)
                         if moduleName != "Child":
                                cmds.addAttr(guide_transform, longName="moduleName", attributeType="enum", enumName=moduleName, keyable=False)
+                        if prefix != "Child":
+                               cmds.addAttr(guide_transform, longName="prefix", attributeType="enum", enumName=prefix, keyable=False)
 
 
                         final_path = core.init_template_file(ext=".guides", export=False)
@@ -180,13 +199,15 @@ def guide_import(joint_name, all_descendents=True, path=None):
         
         
         else:
-                world_position, parent, moduleName = get_data(joint_name, module_name=True)
+                world_position, parent, moduleName, prefix = get_data(joint_name, module_name=True)
                 guide_transform = cmds.createNode('transform', name=joint_name)
                 cmds.xform(guide_transform, ws=True, t=world_position)
                 cmds.parent(guide_transform, guide_grp)
                 transforms_chain_export.append(guide_transform)
                 if moduleName != "Child":
                         cmds.addAttr(guide_transform, longName="moduleName", attributeType="enum", enumName=moduleName, keyable=False)
+                if prefix != "Child":
+                        cmds.addAttr(guide_transform, longName="prefix", attributeType="enum", enumName=prefix, keyable=False)
 
         return transforms_chain_export
                
