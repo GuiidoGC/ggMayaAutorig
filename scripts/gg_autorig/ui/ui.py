@@ -10,7 +10,7 @@ from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from functools import partial
 from importlib import reload
 
-
+from gg_autorig.ui import controllers_ui
 from gg_autorig.utils import core
 from gg_autorig.autorig import rig_builder
 from gg_autorig.utils.guides import guide_creation
@@ -21,6 +21,7 @@ reload(rig_builder)
 reload(guide_creation)
 reload(guides_manager)
 reload(core)
+reload(controllers_ui)
 
 def get_maya_win():
     win_ptr = omui.MQtUtil.mainWindow()
@@ -32,38 +33,6 @@ def delete_workspace_control(control):
         cmds.workspaceControl(control, e=True, close=True)
         cmds.deleteUI(control, control=True)
 
-class PhotoButton(QtWidgets.QWidget):
-    def __init__(self, image_path, label_text, parent=None):
-        super(PhotoButton, self).__init__(parent)
-
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.setSpacing(0)
-        layout.setContentsMargins(0, 0, 0, 0)
-
-        pixmap = QtGui.QPixmap(image_path)
-        pixmap = pixmap.scaled(64, 64, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
-        image_label = QtWidgets.QLabel()
-        image_label.setPixmap(pixmap)
-        image_label.setAlignment(QtCore.Qt.AlignCenter)
-
-        text_label = QtWidgets.QLabel(label_text)
-        text_label.setAlignment(QtCore.Qt.AlignCenter)
-        text_label.setWordWrap(True)
-
-        button = QtWidgets.QPushButton()
-        button.setToolTip(label_text) 
-        button.setLayout(QtWidgets.QVBoxLayout())
-        button.layout().setSpacing(0)
-        button.layout().setContentsMargins(0, 0, 0, 0)
-        button.layout().addWidget(image_label)
-        button.layout().addWidget(text_label)
-        button.setFixedSize(80, 100)
-        button.clicked.connect(lambda: self.on_clicked(label_text))
-
-        layout.addWidget(button)
-
-    def on_clicked(self, name):
-        om.MGlobal.displayInfo("Button clicked:", name)
 
 class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
     TOOL_NAME = "Toolbox"
@@ -86,7 +55,7 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         self.create_connections()
         self.apply_stylesheet()
 
-        self.preset_combo.setCurrentIndex(5)
+        self.preset_combo.setCurrentIndex(1)
         self.module_list.setCurrentRow(0)
         self.module_library_selected()
         self.mesh_selection_changed(init=True)
@@ -230,32 +199,6 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         self.mirror_selected_guides = QtWidgets.QPushButton("Mirror Selected Guides")
         self.build_rig_button = QtWidgets.QPushButton("Build Rig")
 
-
-        # === Controller Creator Tab Widgets ===
-        self.controller_scroll_area = QtWidgets.QScrollArea()
-        self.controller_scroll_area.setWidgetResizable(True)
-
-        self.controller_container = QtWidgets.QWidget()
-        self.controller_grid = QtWidgets.QGridLayout(self.controller_container)
-        self.controller_grid.setSpacing(0)
-        self.controller_grid.setContentsMargins(0, 0, 0, 0)
-
-        self.controller_scroll_area.setWidget(self.controller_container)
-
-        maya_icon_path = os.path.join(cmds.internalVar(upd=True), "icons", "cube.png")
-
-        sample_names = [
-            "L_armBuffer_CTL", "L_davicle_G", "L_fingerIndex_CTL",
-            "L_fingerThumb_CTL", "L_heel_CTL", "L_legPv_CTL",
-            "arrow_1", "arrow_2way", "arrow_4way", "circle_CTL"
-        ]
-
-        cols = 4
-        for index, name in enumerate(sample_names):
-            row = index // cols
-            col = index % cols
-            self.controller_grid.addWidget(PhotoButton(maya_icon_path, name), row, col)
-
     def create_layout(self):
         main_layout = QtWidgets.QVBoxLayout(self)
 
@@ -317,8 +260,6 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         settings_layout.addLayout(controllers_quantity_h_layout)
         settings_layout.addStretch()
         settings_layout.addWidget(self.add_guides_button, alignment=QtCore.Qt.AlignCenter)
-        # settings_layout.addStretch()
-
        
         hierarchy_layout = QtWidgets.QVBoxLayout()
         hierarchy_layout.addWidget(self.tree)
@@ -371,13 +312,12 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
 
         self.autorig_tab.setLayout(autorig_layout)
 
+        controllers_tab_layout = controllers_ui.ControllerTab().create_layout()
+        self.controller_center_tab.setLayout(controllers_tab_layout)
+
         # Add tabs
         self.tabs.addTab(self.autorig_tab, "RigTool")
         self.tabs.addTab(self.controller_center_tab, "Controller Creator")
-
-        controller_layout = QtWidgets.QVBoxLayout()
-        controller_layout.addWidget(self.controller_scroll_area)
-        self.controller_center_tab.setLayout(controller_layout)
 
         main_layout.addWidget(self.tabs)
 
@@ -448,7 +388,6 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
             else:
                 om.MGlobal.displayWarning("Selected mesh does not exist.")
         
-
     def mirror_selected_guide(self):
 
         selected_items = cmds.ls(selection=True)
@@ -500,7 +439,7 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
 
                     om.MGlobal.displayInfo(f"Split module name: {split_name}")
 
-
+                    print(split_name)
                     if split_name == "Foot":
                         item = item.split("_")[1]
                         foot_module = split_camel_case(item).split(" ")
@@ -514,7 +453,7 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
                     elif side == "C":
                         om.MGlobal.displayError("Cannot mirror Center (C) side guides.")
                         return
-                    mirrored_guides = self.add_guides(mirror=[split_name + " Module", side, joint_twist, type_name, controller_number, f"{foot_module} Module", prefix], )
+                    mirrored_guides = self.add_guides(mirror=[split_name + " Module", side, joint_twist, type_name, controller_number, f"{foot_module} Module", prefix])
 
                     for original, mirrored in zip(guide_list, mirrored_guides):
                         orig_pos = cmds.xform(original, q=True, ws=True, t=True)
@@ -526,7 +465,6 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
                 else:
                     om.MGlobal.displayWarning("Selected guide is not mirrorable.")
                     return
-
 
     def module_library_selected(self):
         self.selected_module = self.module_list.currentItem().text()
@@ -700,8 +638,6 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
                                 
                                 self.end_guides[i][z] = renamed  
 
-        
-    
     def check_last_file(self, file_path, existance=False):
 
         if existance:
@@ -742,7 +678,6 @@ class GG_Toolbox(MayaQWidgetDockableMixin, QtWidgets.QDialog):
             else:
                 # If next file does not exist, return the highest existing file
                 return max_file
-
 
     def combo_box_changed(self):
 

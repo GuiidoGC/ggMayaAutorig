@@ -4,7 +4,7 @@
             "worldPosition": [
                 18.321469984628735,
                 38.51617443995717,
-                0.3409449528772368
+                0.18711252844463422
             ],
             "parent": "L_elbow_GUIDE",
             "jointTwist": "Child",
@@ -16,7 +16,7 @@
             "worldPosition": [
                 11.660552505195897,
                 43.50216910447047,
-                -0.2630006288899325
+                -1.0332362346691948
             ],
             "parent": "L_shoulder_GUIDE",
             "jointTwist": "Child",
@@ -64,7 +64,7 @@
             "worldPosition": [
                 -18.321469984628735,
                 38.51617443995717,
-                0.3409449528772368
+                0.18711252844463422
             ],
             "parent": "R_elbow_GUIDE",
             "jointTwist": "Child",
@@ -76,7 +76,7 @@
             "worldPosition": [
                 -11.660552505195897,
                 43.50216910447047,
-                -0.2630006288899325
+                -1.0332362346691948
             ],
             "parent": "R_shoulder_GUIDE",
             "jointTwist": "Child",
@@ -120,112 +120,64 @@
             "moduleName": "arm",
             "prefix": "Child"
         },
-        "R_tip_GUIDE": {
+        "C_spine02_GUIDE": {
             "worldPosition": [
-                -3.3978564049586786,
-                0.44128683666811774,
-                5.1831342012549495
+                0.0,
+                44.20895562192033,
+                0.0
             ],
-            "parent": "R_ball_GUIDE",
+            "parent": "C_spine01_GUIDE",
             "jointTwist": "Child",
             "type": "Child",
             "moduleName": "Child",
             "prefix": "Child"
         },
-        "R_ball_GUIDE": {
+        "C_spine01_GUIDE": {
             "worldPosition": [
-                -3.3978564049586786,
-                0.44128683666811774,
-                1.3876318089104518
-            ],
-            "parent": "R_ankle_GUIDE",
-            "jointTwist": "Child",
-            "type": "Child",
-            "moduleName": "Child",
-            "prefix": "Child"
-        },
-        "R_ankle_GUIDE": {
-            "worldPosition": [
-                -3.3978564049586786,
-                3.329899276859507,
-                -1.8144734542474437
-            ],
-            "parent": "R_knee_GUIDE",
-            "jointTwist": "Child",
-            "type": "Child",
-            "moduleName": "Child",
-            "prefix": "Child"
-        },
-        "R_knee_GUIDE": {
-            "worldPosition": [
-                -3.397856404958679,
-                17.26111053719009,
-                -0.28225142621627075
-            ],
-            "parent": "R_hip_GUIDE",
-            "jointTwist": "Child",
-            "type": "Child",
-            "moduleName": "Child",
-            "prefix": "Child"
-        },
-        "R_legSettings_GUIDE": {
-            "worldPosition": [
-                -8.15485537190083,
-                32.007807334710755,
-                -0.645146117065758
-            ],
-            "parent": "R_hip_GUIDE",
-            "jointTwist": "Child",
-            "type": "Child",
-            "moduleName": "Child",
-            "prefix": "Child"
-        },
-        "R_hip_GUIDE": {
-            "worldPosition": [
-                -3.397856404958678,
-                32.007807334710755,
-                -0.645146117065758
+                0.0,
+                34.761138636274396,
+                0.0
             ],
             "parent": "guides_GRP",
             "jointTwist": 5.0,
-            "type": "Child",
-            "moduleName": "leg",
+            "type": 0,
+            "moduleName": "spine",
             "prefix": "Child"
         },
-        "R_heel_GUIDE": {
+        "C_localHip_GUIDE": {
             "worldPosition": [
-                -3.398,
                 0.0,
-                -3.8080899715423584
-            ],
-            "parent": "R_bankIn_GUIDE",
-            "jointTwist": "Child",
-            "type": "Child",
-            "moduleName": "Child",
-            "prefix": "Child"
-        },
-        "R_bankIn_GUIDE": {
-            "worldPosition": [
-                -1.048,
-                0.0,
-                1.8890279531478882
-            ],
-            "parent": "R_bankOut_GUIDE",
-            "jointTwist": "Child",
-            "type": "Child",
-            "moduleName": "Child",
-            "prefix": "Child"
-        },
-        "R_bankOut_GUIDE": {
-            "worldPosition": [
-                -5.616,
-                0.0,
-                1.8890279531478882
+                32.655188397129166,
+                0.0
             ],
             "parent": "guides_GRP",
             "jointTwist": "Child",
             "type": "Child",
-            "moduleName": "foot",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_head_GUIDE": {
+            "worldPosition": [
+                0.0,
+                56.67400594910466,
+                0.3325837320574164
+            ],
+            "parent": "C_neck_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_neck_GUIDE": {
+            "worldPosition": [
+                0.0,
+                50.85379063809987,
+                -0.4988755980861246
+            ],
+            "parent": "guides_GRP",
+            "jointTwist": 5.0,
+            "type": 0,
+            "moduleName": "neck",
             "prefix": "Child"
         },
         "L_tip_GUIDE": {
@@ -336,64 +288,112 @@
             "moduleName": "foot",
             "prefix": "Child"
         },
-        "C_spine02_GUIDE": {
+        "R_tip_GUIDE": {
             "worldPosition": [
-                0.0,
-                44.20895562192033,
-                0.0
+                -3.3978564049586786,
+                0.44128683666811774,
+                5.1831342012549495
             ],
-            "parent": "C_spine01_GUIDE",
+            "parent": "R_ball_GUIDE",
             "jointTwist": "Child",
             "type": "Child",
             "moduleName": "Child",
             "prefix": "Child"
         },
-        "C_spine01_GUIDE": {
+        "R_ball_GUIDE": {
             "worldPosition": [
-                0.0,
-                34.761138636274396,
-                0.0
+                -3.3978564049586786,
+                0.44128683666811774,
+                1.3876318089104518
             ],
-            "parent": "guides_GRP",
-            "jointTwist": 6.0,
-            "type": 0,
-            "moduleName": "spine",
-            "prefix": "Child"
-        },
-        "C_localHip_GUIDE": {
-            "worldPosition": [
-                0.0,
-                32.655188397129166,
-                0.0
-            ],
-            "parent": "guides_GRP",
+            "parent": "R_ankle_GUIDE",
             "jointTwist": "Child",
             "type": "Child",
             "moduleName": "Child",
             "prefix": "Child"
         },
-        "C_head_GUIDE": {
+        "R_ankle_GUIDE": {
             "worldPosition": [
-                0.0,
-                56.67400594910466,
-                0.3325837320574164
+                -3.3978564049586786,
+                3.329899276859507,
+                -1.8144734542474437
             ],
-            "parent": "C_neck_GUIDE",
+            "parent": "R_knee_GUIDE",
             "jointTwist": "Child",
             "type": "Child",
             "moduleName": "Child",
             "prefix": "Child"
         },
-        "C_neck_GUIDE": {
+        "R_knee_GUIDE": {
             "worldPosition": [
-                0.0,
-                50.85379063809987,
-                -0.4988755980861246
+                -3.397856404958679,
+                17.26111053719009,
+                -0.28225142621627075
+            ],
+            "parent": "R_hip_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "R_legSettings_GUIDE": {
+            "worldPosition": [
+                -8.15485537190083,
+                32.007807334710755,
+                -0.645146117065758
+            ],
+            "parent": "R_hip_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "R_hip_GUIDE": {
+            "worldPosition": [
+                -3.397856404958678,
+                32.007807334710755,
+                -0.645146117065758
             ],
             "parent": "guides_GRP",
             "jointTwist": 5.0,
-            "type": 0,
-            "moduleName": "neck",
+            "type": "Child",
+            "moduleName": "leg",
+            "prefix": "Child"
+        },
+        "R_heel_GUIDE": {
+            "worldPosition": [
+                -3.398,
+                0.0,
+                -3.8080899715423584
+            ],
+            "parent": "R_bankIn_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "R_bankIn_GUIDE": {
+            "worldPosition": [
+                -1.048,
+                0.0,
+                1.8890279531478882
+            ],
+            "parent": "R_bankOut_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "R_bankOut_GUIDE": {
+            "worldPosition": [
+                -5.616,
+                0.0,
+                1.8890279531478882
+            ],
+            "parent": "guides_GRP",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "foot",
             "prefix": "Child"
         }
     },
@@ -418,13 +418,13 @@
                             ]
                         },
                         {
-                            "C_neck_GUIDE": []
-                        },
-                        {
                             "R_arm_GUIDE": []
                         },
                         {
                             "L_arm_GUIDE": []
+                        },
+                        {
+                            "C_neck_GUIDE": []
                         }
                     ]
                 }

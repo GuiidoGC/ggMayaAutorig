@@ -492,50 +492,26 @@ class LimbModule(object):
         cmds.connectAttr(f"{self.switch_ctl}.switchIkFk", f"{rev}.inputX")
         cmds.connectAttr(f"{rev}.outputX", f"{self.ik_controllers}.visibility")
 
-        blend_two_attrs = cmds.createNode("blendTwoAttr", name=f"{self.side}_{self.module_name}IkFkBlendNonRoll_BTA", ss=True)
-    
-        world_rotation_flm = cmds.createNode("floatMath", name=f"{self.side}_{self.module_name}IkFkWorldRotation_FLM", ss=True)
-        world_rotation_negate_flm = cmds.createNode("floatMath", name=f"{self.side}_{self.module_name}IkFkWorldRotationNegate_FLM", ss=True)
-        world_rotation_decompose = cmds.createNode("decomposeMatrix", name=f"{self.side}_{self.module_name}IkFkWorldRotation_DCM", ss=True)
 
-        cmds.connectAttr(f"{self.masterWalk_ctl}.worldMatrix[0]", f"{world_rotation_decompose}.inputMatrix")
-        cmds.connectAttr(f"{world_rotation_decompose}.outputRotateY", f"{world_rotation_negate_flm}.floatA")
+
+        # if self.side == "R":
+        #     self.fk_floatMath = cmds.createNode("floatMath", name=f"{self.side}_{self.module_name}FkFloatMath", ss=True)
+        #     self.ik_floatMath = cmds.createNode("floatMath", name=f"{self.side}_{self.module_name}IkFloatMath", ss=True)
+
+        #     cmds.connectAttr(f"{self.fk_ctls[0]}.upperTwist", f"{self.fk_floatMath}.floatA")
+        #     cmds.connectAttr(f"{self.hand_ws_ik_ctl}.upperTwist", f"{self.ik_floatMath}.floatA")
+
+        #     ik_joint_rotateX = cmds.xform(self.fk_joints[0], q=True, ro=True, ws=True)[0]
+        #     cmds.setAttr(f"{self.fk_floatMath}.floatB", ik_joint_rotateX)
+        #     cmds.setAttr(f"{self.ik_floatMath}.floatB", ik_joint_rotateX)
+
+        #     cmds.connectAttr(f"{self.fk_floatMath}.outFloat", f"{blend_two_attrs}.input[1]")
+        #     cmds.connectAttr(f"{self.ik_floatMath}.outFloat", f"{blend_two_attrs}.input[0]")
+
+
+
+        # else:
         
-        if self.side == "L":
-            cmds.setAttr(f"{world_rotation_negate_flm}.floatB", -1) # Quizas varia en el brazo y R side
-        else:
-            cmds.setAttr(f"{world_rotation_negate_flm}.floatB", 1)
-
-        cmds.connectAttr(f"{world_rotation_negate_flm}.outFloat", f"{world_rotation_flm}.floatB")
-        cmds.connectAttr(f"{blend_two_attrs}.output", f"{world_rotation_flm}.floatA")
-
-        cmds.setAttr(f"{world_rotation_flm}.operation", 0)
-        cmds.setAttr(f"{world_rotation_negate_flm}.operation", 2) 
-
-
-        cmds.connectAttr(f"{self.switch_ctl}.switchIkFk", f"{blend_two_attrs}.attributesBlender")
-
-
-
-        if self.side == "R":
-            self.fk_floatMath = cmds.createNode("floatMath", name=f"{self.side}_{self.module_name}FkFloatMath", ss=True)
-            self.ik_floatMath = cmds.createNode("floatMath", name=f"{self.side}_{self.module_name}IkFloatMath", ss=True)
-
-            cmds.connectAttr(f"{self.fk_ctls[0]}.upperTwist", f"{self.fk_floatMath}.floatA")
-            cmds.connectAttr(f"{self.hand_ws_ik_ctl}.upperTwist", f"{self.ik_floatMath}.floatA")
-
-            ik_joint_rotateX = cmds.xform(self.fk_joints[0], q=True, ro=True, ws=True)[0]
-            cmds.setAttr(f"{self.fk_floatMath}.floatB", ik_joint_rotateX)
-            cmds.setAttr(f"{self.ik_floatMath}.floatB", ik_joint_rotateX)
-
-            cmds.connectAttr(f"{self.fk_floatMath}.outFloat", f"{blend_two_attrs}.input[1]")
-            cmds.connectAttr(f"{self.ik_floatMath}.outFloat", f"{blend_two_attrs}.input[0]")
-
-
-
-        else:
-            cmds.connectAttr(f"{self.fk_ctls[0]}.upperTwist", f"{blend_two_attrs}.input[1]")
-            cmds.connectAttr(f"{self.hand_ws_ik_ctl}.upperTwist", f"{blend_two_attrs}.input[0]")
 
 
         self.blend_chain = []
@@ -548,22 +524,42 @@ class LimbModule(object):
             cmds.connectAttr(f"{self.switch_ctl}.switchIkFk", f"{blendMatrix}.target[0].weight")
             
             if i == 0:
-                decomposeMatrix = cmds.createNode("decomposeMatrix", name=f"{self.side}_{self.module_name}NonRoll0{i+1}_DCM", ss=True)
-                composeMatrix = cmds.createNode("composeMatrix", name=f"{self.side}_{self.module_name}NonRoll0{i+1}_CMT", ss=True)
+                blend_two_attrs = cmds.createNode("blendTwoAttr", name=f"{self.side}_{self.module_name}IkFkBlendNonRoll_BTA", ss=True)
+                cmds.connectAttr(f"{self.fk_ctls[0]}.upperTwist", f"{blend_two_attrs}.input[1]")
+                cmds.connectAttr(f"{self.hand_ws_ik_ctl}.upperTwist", f"{blend_two_attrs}.input[0]")
+                cmds.connectAttr(f"{self.switch_ctl}.switchIkFk", f"{blend_two_attrs}.attributesBlender")
 
-                cmds.connectAttr(f"{blendMatrix}.outputMatrix", f"{decomposeMatrix}.inputMatrix")
-                cmds.connectAttr(f"{decomposeMatrix}.outputQuat", f"{composeMatrix}.inputQuat")
-                cmds.connectAttr(f"{decomposeMatrix}.outputRotateY", f"{composeMatrix}.inputRotateY")
-                cmds.connectAttr(f"{decomposeMatrix}.outputRotateZ", f"{composeMatrix}.inputRotateZ")
-                cmds.connectAttr(f"{world_rotation_flm}.outFloat", f"{composeMatrix}.inputRotateX")
-                cmds.connectAttr(f"{decomposeMatrix}.outputScale", f"{composeMatrix}.inputScale")
-                cmds.connectAttr(f"{decomposeMatrix}.outputShear", f"{composeMatrix}.inputShear")
-                cmds.connectAttr(f"{decomposeMatrix}.outputTranslate", f"{composeMatrix}.inputTranslate")
+                world_rotation_flm = cmds.createNode("floatMath", name=f"{self.side}_{self.module_name}IkFkWorldRotation_FLM", ss=True)
+                controllers_local_flm = cmds.createNode("floatMath", name=f"{self.side}_{self.module_name}IkFkControllersLocal_FLM", ss=True)
+                world_rotation_decompose = cmds.createNode("decomposeMatrix", name=f"{self.side}_{self.module_name}IkFkWorldRotation_DCM", ss=True)
+                controllers_local_decompose = cmds.createNode("decomposeMatrix", name=f"{self.side}_{self.module_name}IkFkControllersLocal_DCM", ss=True)
+                end_matrix_compose = cmds.createNode("composeMatrix", name=f"{self.side}_{self.module_name}IkFkEndMatrix_CMP", ss=True)
+                controllers_local_blend = cmds.createNode("blendMatrix", name=f"{self.side}_{self.module_name}IkFkControllersLocalBlend_BLM", ss=True)
+                cmds.connectAttr(f"{self.root_ik_ctl}.matrix", f"{controllers_local_blend}.inputMatrix")
+                cmds.connectAttr(f"{self.fk_ctls[0]}.matrix", f"{controllers_local_blend}.target[0].targetMatrix")
+                cmds.connectAttr(f"{self.switch_ctl}.switchIkFk", f"{controllers_local_blend}.target[0].weight")
 
-                cmds.connectAttr(f"{composeMatrix}.outputMatrix", f"{joint}.offsetParentMatrix")
+                cmds.connectAttr(f"{blendMatrix}.outputMatrix", f"{world_rotation_decompose}.inputMatrix")
+                cmds.connectAttr(f"{world_rotation_decompose}.outputQuat", f"{end_matrix_compose}.inputQuat")
+                cmds.connectAttr(f"{world_rotation_decompose}.outputTranslate", f"{end_matrix_compose}.inputTranslate")
+                cmds.connectAttr(f"{world_rotation_decompose}.outputShear", f"{end_matrix_compose}.inputShear")
+                cmds.connectAttr(f"{world_rotation_decompose}.outputScale", f"{end_matrix_compose}.inputScale")
+                cmds.connectAttr(f"{world_rotation_decompose}.outputRotateX", f"{world_rotation_flm}.floatA")
+                cmds.connectAttr(f"{world_rotation_decompose}.outputRotateY", f"{end_matrix_compose}.inputRotateY")
+                cmds.connectAttr(f"{world_rotation_decompose}.outputRotateZ", f"{end_matrix_compose}.inputRotateZ")
 
-            
-            
+                cmds.connectAttr(f"{controllers_local_blend}.outputMatrix", f"{controllers_local_decompose}.inputMatrix")
+                cmds.connectAttr(f"{controllers_local_decompose}.outputRotateX", f"{world_rotation_flm}.floatB")
+                cmds.setAttr(f"{world_rotation_flm}.operation", 1) 
+
+                cmds.connectAttr(f"{world_rotation_flm}.outFloat", f"{controllers_local_flm}.floatA")
+                cmds.connectAttr(f"{blend_two_attrs}.output", f"{controllers_local_flm}.floatB")
+                cmds.setAttr(f"{controllers_local_flm}.operation", 0) 
+                cmds.connectAttr(f"{controllers_local_flm}.outFloat", f"{end_matrix_compose}.inputRotateX")
+
+                cmds.connectAttr(f"{end_matrix_compose}.outputMatrix", f"{joint}.offsetParentMatrix")
+
+
             else:
                 cmds.connectAttr(f"{blendMatrix}.outputMatrix", f"{joint}.offsetParentMatrix")
 
