@@ -12,8 +12,6 @@ from gg_autorig.utils import space_switch
 
 reload(core)
 
-
-
 def parented_chain(skinning_joints, parent, hand_value):
 
     data_exporter = data_export.DataExport()

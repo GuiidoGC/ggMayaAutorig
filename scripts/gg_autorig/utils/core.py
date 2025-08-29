@@ -108,3 +108,80 @@ def init_template_file(ext=".guides", export=True):
         end_file_path = default_template
 
     return end_file_path
+
+def square_multiyply(distance, side):
+    name = distance.split(".")[0]
+    name = "_".join(name.split("_")[:2])
+    multiply = cmds.createNode("multiply", name=f"{name}Squared{side}_MULT")
+    cmds.connectAttr(f"{distance}", f"{multiply}.input[0]")
+    cmds.connectAttr(f"{distance}", f"{multiply}.input[1]")
+    return f"{multiply}.output"
+
+def law_of_cosine(sides = [], power=[], name = "L_armModule", negate=False, acos=False):
+    """`
+    Calculate the angle opposite side c using the law of cosines.
+    """
+    
+
+    if len(sides) != 3:
+        raise ValueError("Three sides are required.")
+    else:
+        a, b, c = sides
+
+    if len(power) == 3:
+        a_square, b_square, c_square = power
+    else:
+        a_square = None
+        b_square = None
+        c_square = None
+
+    if a_square is None:
+        a_square = square_multiyply(a, "A")
+    if b_square is None:
+        b_square = square_multiyply(b, "B")
+    if c_square is None:
+        c_square = square_multiyply(c, "C")
+
+    power_mults = [a_square, b_square, c_square]
+
+    # a2 + c2 -b2
+    sum = cmds.createNode("sum", name=f"{name}CustomSolver_SUM")
+    cmds.connectAttr(f"{a_square}", f"{sum}.input[0]")
+    cmds.connectAttr(f"{c_square}", f"{sum}.input[1]")
+
+    subtract = cmds.createNode("subtract", name=f"{name}CosNumerator_SUB")
+    cmds.connectAttr(f"{sum}.output", f"{subtract}.input1")
+    cmds.connectAttr(f"{b_square}", f"{subtract}.input2")
+
+    # 2ac
+    multiply = cmds.createNode("multiply", name=f"{name}CosDenominator_MULT")
+    cmds.setAttr(f"{multiply}.input[0]", 2)
+    cmds.connectAttr(f"{a}", f"{multiply}.input[1]")
+    cmds.connectAttr(f"{c}", f"{multiply}.input[2]")
+
+    #complete formula
+    divide = cmds.createNode("divide", name=f"{name}CosValue_DIV", ss=True)
+    cmds.connectAttr(f"{subtract}.output", f"{divide}.input1")
+    cmds.connectAttr(f"{multiply}.output", f"{divide}.input2")
+
+    if acos and negate:
+        acos = cmds.createNode("acos", name=f"{name}CustomSolver_ACOS")
+        cmds.connectAttr(f"{divide}.output", f"{acos}.input")
+        negate_cos_value = cmds.createNode("negate", name=f"{name}CosineValue_NEGATE")
+        cmds.connectAttr(f"{divide}.output", f"{negate_cos_value}.input")
+    
+        return divide, acos, power_mults, negate_cos_value
+
+    if acos:
+        acos = cmds.createNode("acos", name=f"{name}CustomSolver_ACOS")
+        cmds.connectAttr(f"{divide}.output", f"{acos}.input")
+
+        return divide, acos, power_mults
+
+    if negate:
+        negate_cos_value = cmds.createNode("negate", name=f"{name}CosineValue_NEGATE")
+        cmds.connectAttr(f"{divide}.output", f"{negate_cos_value}.input")
+
+        return divide, power_mults, negate_cos_value
+
+    return divide, power_mults

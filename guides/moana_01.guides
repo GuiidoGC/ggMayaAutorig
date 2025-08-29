@@ -4,7 +4,7 @@
             "worldPosition": [
                 18.321469984628735,
                 38.51617443995717,
-                0.18711252844463422
+                0.20138882706914218
             ],
             "parent": "L_elbow_GUIDE",
             "jointTwist": "Child",
@@ -16,7 +16,7 @@
             "worldPosition": [
                 11.660552505195897,
                 43.50216910447047,
-                -1.0332362346691948
+                -3.803540140041306
             ],
             "parent": "L_shoulder_GUIDE",
             "jointTwist": "Child",
@@ -64,7 +64,7 @@
             "worldPosition": [
                 -18.321469984628735,
                 38.51617443995717,
-                0.18711252844463422
+                0.20138882706914218
             ],
             "parent": "R_elbow_GUIDE",
             "jointTwist": "Child",
@@ -76,7 +76,7 @@
             "worldPosition": [
                 -11.660552505195897,
                 43.50216910447047,
-                -1.0332362346691948
+                -3.803540140041306
             ],
             "parent": "R_shoulder_GUIDE",
             "jointTwist": "Child",
@@ -118,66 +118,6 @@
             "jointTwist": 5.0,
             "type": "Child",
             "moduleName": "arm",
-            "prefix": "Child"
-        },
-        "C_spine02_GUIDE": {
-            "worldPosition": [
-                0.0,
-                44.20895562192033,
-                0.0
-            ],
-            "parent": "C_spine01_GUIDE",
-            "jointTwist": "Child",
-            "type": "Child",
-            "moduleName": "Child",
-            "prefix": "Child"
-        },
-        "C_spine01_GUIDE": {
-            "worldPosition": [
-                0.0,
-                34.761138636274396,
-                0.0
-            ],
-            "parent": "guides_GRP",
-            "jointTwist": 5.0,
-            "type": 0,
-            "moduleName": "spine",
-            "prefix": "Child"
-        },
-        "C_localHip_GUIDE": {
-            "worldPosition": [
-                0.0,
-                32.655188397129166,
-                0.0
-            ],
-            "parent": "guides_GRP",
-            "jointTwist": "Child",
-            "type": "Child",
-            "moduleName": "Child",
-            "prefix": "Child"
-        },
-        "C_head_GUIDE": {
-            "worldPosition": [
-                0.0,
-                56.67400594910466,
-                0.3325837320574164
-            ],
-            "parent": "C_neck_GUIDE",
-            "jointTwist": "Child",
-            "type": "Child",
-            "moduleName": "Child",
-            "prefix": "Child"
-        },
-        "C_neck_GUIDE": {
-            "worldPosition": [
-                0.0,
-                50.85379063809987,
-                -0.4988755980861246
-            ],
-            "parent": "guides_GRP",
-            "jointTwist": 5.0,
-            "type": 0,
-            "moduleName": "neck",
             "prefix": "Child"
         },
         "L_tip_GUIDE": {
@@ -395,6 +335,66 @@
             "type": "Child",
             "moduleName": "foot",
             "prefix": "Child"
+        },
+        "C_spine02_GUIDE": {
+            "worldPosition": [
+                0.0,
+                44.20895562192033,
+                0.0
+            ],
+            "parent": "C_spine01_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_spine01_GUIDE": {
+            "worldPosition": [
+                0.0,
+                34.761138636274396,
+                0.0
+            ],
+            "parent": "guides_GRP",
+            "jointTwist": 5.0,
+            "type": 0,
+            "moduleName": "spine",
+            "prefix": "Child"
+        },
+        "C_localHip_GUIDE": {
+            "worldPosition": [
+                0.0,
+                32.655188397129166,
+                0.0
+            ],
+            "parent": "guides_GRP",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_head_GUIDE": {
+            "worldPosition": [
+                0.0,
+                56.67400594910466,
+                0.3325837320574164
+            ],
+            "parent": "C_neck_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_neck_GUIDE": {
+            "worldPosition": [
+                0.0,
+                50.85379063809987,
+                -0.4988755980861246
+            ],
+            "parent": "guides_GRP",
+            "jointTwist": 5.0,
+            "type": 0,
+            "moduleName": "neck",
+            "prefix": "Child"
         }
     },
     "controls": "D:/git/maya/biped_autorig/curves/moana_01.ctls",
@@ -406,27 +406,26 @@
         {
             "C_root_GUIDE": [
                 {
+                    "L_arm_GUIDE": []
+                },
+                {
+                    "R_arm_GUIDE": []
+                },
+                {
+                    "L_leg_GUIDE": []
+                },
+                {
+                    "R_leg_GUIDE": []
+                },
+                {
                     "C_spine_GUIDE": [
                         {
-                            "C_localHip_GUIDE": [
-                                {
-                                    "L_leg_GUIDE": []
-                                },
-                                {
-                                    "R_leg_GUIDE": []
-                                }
-                            ]
-                        },
-                        {
-                            "R_arm_GUIDE": []
-                        },
-                        {
-                            "L_arm_GUIDE": []
-                        },
-                        {
-                            "C_neck_GUIDE": []
+                            "C_localHip_GUIDE": []
                         }
                     ]
+                },
+                {
+                    "C_neck_GUIDE": []
                 }
             ]
         }

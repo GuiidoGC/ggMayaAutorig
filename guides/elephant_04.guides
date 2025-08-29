@@ -695,8 +695,190 @@
             "type": "Child",
             "moduleName": "variableFk",
             "prefix": "trunk"
+        },
+        "C_tailVariableFK015_GUIDE": {
+            "worldPosition": [
+                0.0,
+                115.7717185088317,
+                -221.80162933133062
+            ],
+            "parent": "C_tailVariableFK014_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK014_GUIDE": {
+            "worldPosition": [
+                0.0,
+                122.6921695202963,
+                -220.93150336505158
+            ],
+            "parent": "C_tailVariableFK013_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK013_GUIDE": {
+            "worldPosition": [
+                0.0,
+                129.6126205317609,
+                -220.06137739877255
+            ],
+            "parent": "C_tailVariableFK012_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK012_GUIDE": {
+            "worldPosition": [
+                0.0,
+                136.5330715432255,
+                -219.19125143249352
+            ],
+            "parent": "C_tailVariableFK011_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK011_GUIDE": {
+            "worldPosition": [
+                0.0,
+                143.4535225546901,
+                -218.32112546621448
+            ],
+            "parent": "C_tailVariableFK010_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK010_GUIDE": {
+            "worldPosition": [
+                0.0,
+                150.3739735661547,
+                -217.45099949993545
+            ],
+            "parent": "C_tailVariableFK009_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK009_GUIDE": {
+            "worldPosition": [
+                0.0,
+                157.29442457761928,
+                -216.58087353365642
+            ],
+            "parent": "C_tailVariableFK008_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK008_GUIDE": {
+            "worldPosition": [
+                0.0,
+                164.21487558908387,
+                -215.71074756737738
+            ],
+            "parent": "C_tailVariableFK007_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK007_GUIDE": {
+            "worldPosition": [
+                0.0,
+                171.13532660054847,
+                -214.84062160109835
+            ],
+            "parent": "C_tailVariableFK006_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK006_GUIDE": {
+            "worldPosition": [
+                0.0,
+                178.05577761201306,
+                -213.97049563481932
+            ],
+            "parent": "C_tailVariableFK005_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK005_GUIDE": {
+            "worldPosition": [
+                0.0,
+                184.97622862347765,
+                -213.10036966854028
+            ],
+            "parent": "C_tailVariableFK004_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK004_GUIDE": {
+            "worldPosition": [
+                0.0,
+                191.89667963494225,
+                -212.23024370226125
+            ],
+            "parent": "C_tailVariableFK003_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK003_GUIDE": {
+            "worldPosition": [
+                0.0,
+                198.81713064640684,
+                -211.36011773598221
+            ],
+            "parent": "C_tailVariableFK002_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK002_GUIDE": {
+            "worldPosition": [
+                0.0,
+                205.73758165787143,
+                -210.48999176970318
+            ],
+            "parent": "C_tailVariableFK001_GUIDE",
+            "jointTwist": "Child",
+            "type": "Child",
+            "moduleName": "Child",
+            "prefix": "Child"
+        },
+        "C_tailVariableFK001_GUIDE": {
+            "worldPosition": [
+                0.0,
+                212.65803266933602,
+                -209.61986580342415
+            ],
+            "parent": "guides_GRP",
+            "jointTwist": 15.0,
+            "type": "Child",
+            "moduleName": "variableFk",
+            "prefix": "tail"
         }
     },
+    "controls": null,
+    "meshes": null,
     "hierarchy": [
         {
             "C_root_GUIDE": [
@@ -705,17 +887,13 @@
                         {
                             "C_localHip_GUIDE": [
                                 {
+                                    "R_backLeg_GUIDE": []
+                                },
+                                {
                                     "L_backLeg_GUIDE": []
                                 },
                                 {
-                                    "R_backLeg_GUIDE": []
-                                }
-                            ]
-                        },
-                        {
-                            "C_neck_GUIDE": [
-                                {
-                                    "C_variableFk_GUIDE": []
+                                    "C_tailVariableFk_GUIDE": []
                                 }
                             ]
                         },
@@ -724,6 +902,13 @@
                         },
                         {
                             "L_frontLeg_GUIDE": []
+                        },
+                        {
+                            "C_neck_GUIDE": [
+                                {
+                                    "C_trunkVariableFk_GUIDE": []
+                                }
+                            ]
                         }
                     ]
                 }
