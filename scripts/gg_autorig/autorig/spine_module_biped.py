@@ -8,6 +8,8 @@ import math
 from gg_autorig.utils.curve_tool import controller_creator
 from gg_autorig.utils.guides.guides_manager import guide_import
 from gg_autorig.utils import data_export
+from gg_autorig.utils import basic_structure
+from gg_autorig.utils import core
 
 reload(data_export)
 
@@ -686,3 +688,10 @@ class SpineModule():
             for i in range(0,4):
                 cmds.setAttr(f"{created_nodes[5]}.value[{i}].value_Interp", 2)
                 cmds.setAttr(f"{created_nodes[5]}.value[{i}].value_FloatValue", values[i])
+# cmds.file(new=True, force=True)
+
+# core.DataManager.set_guide_data("D:/git/maya/biped_autorig/guides/moana_01.guides")
+# core.DataManager.set_ctls_data("D:/git/maya/biped_autorig/curves/body_template_01.ctls")
+
+# basic_structure.create_basic_structure(asset_name="moana_02")
+# a = SpineModule().make("C_spine01_GUIDE")

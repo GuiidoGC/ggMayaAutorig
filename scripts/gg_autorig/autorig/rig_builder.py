@@ -7,7 +7,7 @@ from gg_autorig.utils import core
 # from gg_autorig.utils.guides import guides_manager
 
 # Rig modules import
-from gg_autorig.autorig import limb_module as lbm
+from gg_autorig.autorig import limb_module_matrix as lbm
 from gg_autorig.autorig import spine_module_quadruped as spm_quad
 from gg_autorig.autorig import spine_module_biped as spm_bip
 from gg_autorig.autorig import neck_module_quadruped as nck_quad
@@ -116,7 +116,6 @@ def make(asset_name="dragon"):
                     vfk.VariableFkModule().make(guide_name)
 
     skeleton_hierarchy = skh.build_complete_hierarchy() 
-    # ss.make_spaces_quadruped()
 
     rename_ctl_shapes()
     joint_label()

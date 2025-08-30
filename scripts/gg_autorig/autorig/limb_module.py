@@ -1186,7 +1186,6 @@ class LimbModule(object):
 
         ss.fk_switch(self.switch_ctl, sources = [skin_joints])
 
-
     def scapula(self):
 
         self.scapula_ctl, self.scapula_ctl_grp = controller_creator(

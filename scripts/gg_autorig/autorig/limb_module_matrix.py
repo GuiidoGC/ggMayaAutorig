@@ -35,7 +35,6 @@ class LimbModule(object):
 
         self.primary_aim = (1, 0, 0)
         self.secondary_aim = (0, 0, 1) 
-        self.prefered_angle = (0, -1, 0) 
 
         self.default_ik = 1
         self.oriented_ik = False
@@ -66,7 +65,6 @@ class LimbModule(object):
 
         #Position Joints
         order = [[self.guides[0], self.guides[1], self.guides[2]], [self.guides[1], self.guides[2], self.guides[0]]]
-
 
         aim_matrix_guides = []
 
@@ -160,10 +158,10 @@ class LimbModule(object):
             self.fk_ctls.append(ctl)
             self.fk_grps.append(ctl_grp) 
 
-        cmds.addAttr(self.fk_ctls[0], shortName="extraAttr", niceName="Extra Attributes  ———", enumName="———",attributeType="enum", keyable=True)
-        cmds.setAttr(self.fk_ctls[0]+".extraAttr", channelBox=True, lock=True)
-        cmds.addAttr(self.fk_ctls[0], shortName="upperTwist", niceName="Upper Twist",defaultValue=0, keyable=True)
-        cmds.addAttr(self.fk_ctls[0], shortName="curvature", niceName="Curvature", maxValue=1, minValue=0,defaultValue=0, keyable=True)
+        # cmds.addAttr(self.fk_ctls[0], shortName="extraAttr", niceName="Extra Attributes  ———", enumName="———",attributeType="enum", keyable=True)
+        # cmds.setAttr(self.fk_ctls[0]+".extraAttr", channelBox=True, lock=True)
+        # cmds.addAttr(self.fk_ctls[0], shortName="upperTwist", niceName="Upper Twist",defaultValue=0, keyable=True)
+        # cmds.addAttr(self.fk_ctls[0], shortName="curvature", niceName="Curvature", maxValue=1, minValue=0,defaultValue=0, keyable=True)
 
         self.fk_wm = [f"{self.fk_ctls[0]}.worldMatrix[0]", f"{self.fk_ctls[1]}.worldMatrix[0]", f"{self.fk_ctls[2]}.worldMatrix[0]"]
 
@@ -322,7 +320,7 @@ class LimbModule(object):
 
         )
 
-        cmds.connectAttr(self.guides_matrix[2] + ".outputMatrix", f"{self.hand_ik_ctl_grp[0]}.offsetParentMatrix")
+        cmds.connectAttr(self.guides[2] + ".worldMatrix[0]", f"{self.hand_ik_ctl_grp[0]}.offsetParentMatrix")
 
         cmds.addAttr(self.pv_ik_ctl, shortName="extraAttr", niceName="Extra Attributes  ———", enumName="———",attributeType="enum", keyable=True)
         cmds.setAttr(self.pv_ik_ctl+".extraAttr", channelBox=True, lock=True)
@@ -334,13 +332,13 @@ class LimbModule(object):
         
         cmds.connectAttr(f"{self.guides_matrix[0]}.outputMatrix", f"{self.root_ik_ctl_grp[0]}.offsetParentMatrix")      
 
-        cmds.addAttr(self.hand_ik_ctl, shortName="ikControls", niceName="IK Controls  ———", enumName="———",attributeType="enum", keyable=True)
-        cmds.addAttr(self.hand_ik_ctl, shortName="curvature", niceName="Curvature", maxValue=1, minValue=0,defaultValue=0, keyable=True)
-        cmds.setAttr(self.hand_ik_ctl+".ikControls", channelBox=True, lock=True)
+        cmds.addAttr(self.hand_ik_ctl, shortName="softSettings", niceName="Soft Settings  ———", enumName="———",attributeType="enum", keyable=True)
+        # cmds.addAttr(self.hand_ik_ctl, shortName="curvature", niceName="Curvature", maxValue=1, minValue=0,defaultValue=0, keyable=True)
+        cmds.setAttr(self.hand_ik_ctl+".softSettings", channelBox=True, lock=True)
         cmds.addAttr(self.hand_ik_ctl, shortName="soft", niceName="Soft",minValue=0,maxValue=1,defaultValue=0, keyable=True)
         cmds.addAttr(self.hand_ik_ctl, shortName="softStart", niceName="Soft Start",minValue=0,maxValue=1,defaultValue=0.8, keyable=True)
-        cmds.addAttr(self.hand_ik_ctl, shortName="twist", niceName="Twist",minValue=-180,defaultValue=0, maxValue=180, keyable=True)
-        cmds.addAttr(self.hand_ik_ctl, shortName="upperTwist", niceName="Upper Twist",defaultValue=0, keyable=True)
+        # cmds.addAttr(self.hand_ik_ctl, shortName="twist", niceName="Twist",minValue=-180,defaultValue=0, maxValue=180, keyable=True)
+        # cmds.addAttr(self.hand_ik_ctl, shortName="upperTwist", niceName="Upper Twist",defaultValue=0, keyable=True)
 
         cmds.addAttr(self.hand_ik_ctl, shortName="strechySep", niceName="Strechy  ———", enumName="———",attributeType="enum", keyable=True)
         cmds.setAttr(self.hand_ik_ctl+".strechySep", channelBox=True, lock=True)
@@ -360,13 +358,20 @@ class LimbModule(object):
 
         name = [f"{self.side}_{self.module_name}UpperInitialLength", f"{self.side}_{self.module_name}LowerInitialLength", f"{self.side}_{self.module_name}CurrentLength"]
 
-        self.ikHandleManager = self.hand_ik_ctl if not self.ikHandleEnabled else f"worldMatrix[0]" # Change for the matrix creation of ikHandleManager
+        if self.ikHandleEnabled:
+            manager = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}IkHandleManager_MMX", ss=True)
+            cmds.connectAttr(f"{self.guides_matrix[2]}.outputMatrix", f"{manager}.matrixIn[0]")
+            cmds.connectAttr(f"{self.leg_guides[0].replace('.worldMatrix[0]', '.worldInverseMatrix[0]')}", f"{manager}.matrixIn[1]")
+
+            self.ikHandleManager = f"{manager}.matrixSum"
+        else:
+            self.ikHandleManager = f"{self.hand_ik_ctl}.worldMatrix[0]"
 
         self.distance_between_output = []
-        for i, (first, second) in enumerate(zip([self.guides[0], self.guides[1], self.root_ik_ctl], [self.guides[1], self.guides[2], self.ikHandleManager])):
-            distance = cmds.createNode("distanceBetween", name=f"{name[i]}_DB")
-            cmds.connectAttr(f"{first}.worldMatrix[0]", f"{distance}.inMatrix1")
-            cmds.connectAttr(f"{second}.worldMatrix[0]", f"{distance}.inMatrix2")
+        for i, (first, second) in enumerate(zip([f"{self.guides[0]}.worldMatrix[0]", f"{self.guides[1]}.worldMatrix[0]", f"{self.root_ik_ctl}.worldMatrix[0]"], [f"{self.guides[1]}.worldMatrix[0]", f"{self.guides[2]}.worldMatrix[0]", f"{self.ikHandleManager}"])):
+            distance = cmds.createNode("distanceBetween", name=f"{name[i]}_DB", ss=True)
+            cmds.connectAttr(f"{first}", f"{distance}.inMatrix1")
+            cmds.connectAttr(f"{second}", f"{distance}.inMatrix2")
 
             if i == 2:
                 global_scale_divide = cmds.createNode("divide", name=f"{self.side}_{self.module_name}GlobalScaleFactor_DIV", ss=True)
@@ -376,7 +381,6 @@ class LimbModule(object):
             else:
                 self.distance_between_output.append(f"{distance}.distance")
             
-
         sum_distance = cmds.createNode("sum", name=f"{self.side}_{self.module_name}InitialLenght_SUM")
         cmds.connectAttr(self.distance_between_output[0], f"{sum_distance}.input[0]")
         cmds.connectAttr(self.distance_between_output[1], f"{sum_distance}.input[1]")
@@ -385,18 +389,18 @@ class LimbModule(object):
         cmds.connectAttr(f"{sum_distance}.output", f"{divide}.input2")
         cmds.connectAttr(f"{self.distance_between_output[2]}", f"{divide}.input1")
 
-        max = cmds.createNode("max", name=f"{self.side}_{self.module_name}Scalar_MAX")
+        max = cmds.createNode("max", name=f"{self.side}_{self.module_name}Scalar_MAX", ss=True)
         cmds.connectAttr(f"{divide}.output", f"{max}.input[0]")
         cmds.setAttr(f"{max}.input[1]", 1)  ############### QUIZAS SE HA DE PONER UN FLOATCONSTANT PROBAR SI GUARDA EL VALOR
 
-        scalar_remap = cmds.createNode("remapValue", name=f"{self.side}_{self.module_name}LengthRatio_REMAP")
+        scalar_remap = cmds.createNode("remapValue", name=f"{self.side}_{self.module_name}LengthRatio_REMAP", ss=True)
         cmds.connectAttr(f"{self.hand_ik_ctl}.stretch", f"{scalar_remap}.inputValue")
         cmds.connectAttr(f"{max}.output", f"{scalar_remap}.outputMax")
         cmds.setAttr(f"{scalar_remap}.outputMin", 1)
 
         stretch_multiply_nodes = []
         for i, name in enumerate(["upperLength", "lowerLength"]):
-            multiply = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}StretchLenght0{i}_MULT")
+            multiply = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}StretchLenght0{i}_MULT", ss=True)
             cmds.connectAttr(f"{self.distance_between_output[i]}", f"{multiply}.input[0]")
             cmds.connectAttr(f"{scalar_remap}.outValue", f"{multiply}.input[1]")
             cmds.connectAttr(f"{self.hand_ik_ctl}.{name}Mult", f"{multiply}.input[2]")
@@ -404,18 +408,18 @@ class LimbModule(object):
 
         # --- STRETCH --- #
 
-        arm_length = cmds.createNode("sum", name=f"{self.side}_{self.module_name}Length_SUM")
+        arm_length = cmds.createNode("sum", name=f"{self.side}_{self.module_name}Length_SUM", ss=True)
         cmds.connectAttr(f"{stretch_multiply_nodes[0]}.output", f"{arm_length}.input[0]")
         cmds.connectAttr(f"{stretch_multiply_nodes[1]}.output", f"{arm_length}.input[1]")
 
-        arm_length_min = cmds.createNode("min", name=f"{self.side}_{self.module_name}ClampedLength_MIN")
+        arm_length_min = cmds.createNode("min", name=f"{self.side}_{self.module_name}ClampedLength_MIN", ss=True)
         cmds.connectAttr(f"{arm_length}.output", f"{arm_length_min}.input[0]")
         cmds.connectAttr(f"{self.distance_between_output[2]}", f"{arm_length_min}.input[1]")
 
 
         # Soft Values pre-build
-        soft_upper_length_scaled = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}SoftUpperLengthScaled_MUL")
-        soft_lower_length_scaled = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}SoftLowerLengthScaled_MUL")
+        soft_upper_length_scaled = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}SoftUpperLengthScaled_MUL", ss=True)
+        soft_lower_length_scaled = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}SoftLowerLengthScaled_MUL", ss=True)
 
         cmds.connectAttr(f"{stretch_multiply_nodes[0]}.output", f"{soft_upper_length_scaled}.input[0]")
         cmds.connectAttr(f"{stretch_multiply_nodes[1]}.output", f"{soft_lower_length_scaled}.input[0]")
@@ -431,104 +435,104 @@ class LimbModule(object):
         soft_cosValue, soft_power_mults = core.law_of_cosine(sides = [f"{stretch_multiply_nodes[0]}.output", f"{stretch_multiply_nodes[1]}.output", f"{arm_length_min}.output"], name = f"{self.side}_{self.module_name}SoftArm")
 
         # --- SOFT ARM --- #
-        
-        soft_cosValueSquared = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}SoftCosValueSquared_MUL")
+
+        soft_cosValueSquared = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}SoftCosValueSquared_MUL", ss=True)
         cmds.connectAttr(f"{soft_cosValue}.output", f"{soft_cosValueSquared}.input[0]")
         cmds.connectAttr(f"{soft_cosValue}.output", f"{soft_cosValueSquared}.input[1]")
 
-        soft_height_squared = cmds.createNode("subtract", name=f"{self.side}_{self.module_name}SoftHeightSquared_SUB")
+        soft_height_squared = cmds.createNode("subtract", name=f"{self.side}_{self.module_name}SoftHeightSquared_SUB", ss=True)
         cmds.setAttr( f"{soft_height_squared}.input1", 1)
         cmds.connectAttr(f"{soft_cosValueSquared}.output", f"{soft_height_squared}.input2")
 
-        soft_height_squared_clamped = cmds.createNode("max", name=f"{self.side}_{self.module_name}SoftHeightSquaredClamped_MAX")
+        soft_height_squared_clamped = cmds.createNode("max", name=f"{self.side}_{self.module_name}SoftHeightSquaredClamped_MAX", ss=True)
         cmds.setAttr(f"{soft_height_squared_clamped}.input[0]", 0)
         cmds.connectAttr(f"{soft_height_squared}.output", f"{soft_height_squared_clamped}.input[1]")
 
-        soft_height = cmds.createNode("power", name=f"{self.side}_{self.module_name}SoftHeight_POW")
+        soft_height = cmds.createNode("power", name=f"{self.side}_{self.module_name}SoftHeight_POW", ss=True)
         cmds.setAttr(f"{soft_height}.exponent", 0.5)
         cmds.connectAttr(f"{soft_height_squared_clamped}.output", f"{soft_height}.input")
 
-        soft_linear_target_height = cmds.createNode("subtract", name=f"{self.side}_{self.module_name}SoftLinearTargetHeight_SUB")
+        soft_linear_target_height = cmds.createNode("subtract", name=f"{self.side}_{self.module_name}SoftLinearTargetHeight_SUB", ss=True)
         cmds.setAttr(f"{soft_linear_target_height}.input1", 1)
         cmds.connectAttr(f"{soft_cosValue}.output", f"{soft_linear_target_height}.input2")
 
-        soft_quadratic_target_height = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}SoftQuadraticTargetHeight_MUL")
+        soft_quadratic_target_height = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}SoftQuadraticTargetHeight_MUL", ss=True)
         cmds.connectAttr(f"{soft_linear_target_height}.output", f"{soft_quadratic_target_height}.input[0]")
         cmds.connectAttr(f"{soft_linear_target_height}.output", f"{soft_quadratic_target_height}.input[1]")
 
-        soft_remapStart = cmds.createNode("remapValue", name=f"{self.side}_{self.module_name}SoftRemapStart_RMV")
+        soft_remapStart = cmds.createNode("remapValue", name=f"{self.side}_{self.module_name}SoftRemapStart_RMV", ss=True)
         cmds.connectAttr(f"{self.hand_ik_ctl}.softStart", f"{soft_remapStart}.inputMin")
         cmds.connectAttr(f"{soft_cosValue}.output", f"{soft_remapStart}.inputValue")
         cmds.setAttr(f"{soft_remapStart}.outputMin", 0)
         cmds.setAttr(f"{soft_remapStart}.outputMax", 1)
         cmds.setAttr(f"{soft_remapStart}.inputMax", 1)
 
-        setup_blend_value = cmds.createNode("smoothStep", name=f"{self.side}_{self.module_name}SetupBlendValue_SMOOTH")
+        setup_blend_value = cmds.createNode("smoothStep", name=f"{self.side}_{self.module_name}SetupBlendValue_SMOOTH", ss=True)
         cmds.connectAttr(f"{soft_remapStart}.outValue", f"{setup_blend_value}.input")
         cmds.setAttr(f"{setup_blend_value}.leftEdge", 0)
         cmds.setAttr(f"{setup_blend_value}.rightEdge", 1)
 
-        cubic_target_height = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}CubicTargetHeight_MUL")
+        cubic_target_height = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}CubicTargetHeight_MUL", ss=True)
         cmds.connectAttr(f"{soft_quadratic_target_height}.output", f"{cubic_target_height}.input[0]")
         cmds.connectAttr(f"{soft_quadratic_target_height}.output", f"{cubic_target_height}.input[1]")
         cmds.connectAttr(f"{soft_quadratic_target_height}.output", f"{cubic_target_height}.input[2]")
 
-        blend_choice = cmds.createNode("blendTwoAttr", name=f"{self.side}_{self.module_name}SoftBlendChoice_CH")
+        blend_choice = cmds.createNode("blendTwoAttr", name=f"{self.side}_{self.module_name}SoftBlendChoice_CH", ss=True)
         cmds.connectAttr(f"{self.hand_ik_ctl}.soft", f"{blend_choice}.attributesBlender")
         cmds.connectAttr(f"{setup_blend_value}.output", f"{blend_choice}.input[1]")
         cmds.connectAttr(f"{cubic_target_height}.output", f"{blend_choice}.input[0]")
 
-        blend_twoAttrs = cmds.createNode("blendTwoAttr", name=f"{self.side}_{self.module_name}SoftHeight_BLT")
+        blend_twoAttrs = cmds.createNode("blendTwoAttr", name=f"{self.side}_{self.module_name}SoftHeight_BLT", ss=True)
         cmds.connectAttr(f"{blend_choice}.output", f"{blend_twoAttrs}.attributesBlender")
         cmds.connectAttr(f"{soft_height}.output", f"{blend_twoAttrs}.input[0]")
         cmds.connectAttr(f"{soft_quadratic_target_height}.output", f"{blend_twoAttrs}.input[1]")
 
-        soft_blended_height_squared = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}SoftBlendedHeightSquared_MUL")
+        soft_blended_height_squared = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}SoftBlendedHeightSquared_MUL", ss=True)
         cmds.connectAttr(f"{blend_twoAttrs}.output", f"{soft_blended_height_squared}.input[0]")
         cmds.connectAttr(f"{blend_twoAttrs}.output", f"{soft_blended_height_squared}.input[1]")
 
-        soft_scaler_squared = cmds.createNode("sum", name=f"{self.side}_{self.module_name}SoftScalerSquared_SUM")
+        soft_scaler_squared = cmds.createNode("sum", name=f"{self.side}_{self.module_name}SoftScalerSquared_SUM", ss=True)
         cmds.connectAttr(f"{soft_blended_height_squared}.output", f"{soft_scaler_squared}.input[0]")
         cmds.connectAttr(f"{soft_cosValueSquared}.output", f"{soft_scaler_squared}.input[1]")
 
         # Upper arm output
-        upper_soft_scaler = cmds.createNode("power", name=f"{self.side}_{self.module_name}UpperSoftScaler_POW")
+        upper_soft_scaler = cmds.createNode("power", name=f"{self.side}_{self.module_name}UpperSoftScaler_POW", ss=True)
         cmds.setAttr(f"{upper_soft_scaler}.exponent", 0.5)
         cmds.connectAttr(f"{soft_scaler_squared}.output", f"{upper_soft_scaler}.input")
 
         cmds.connectAttr(f"{upper_soft_scaler}.output", f"{soft_upper_length_scaled}.input[1]")
 
         #Lower arm
-        segmentLengthRatio = cmds.createNode("divide", name=f"{self.side}_{self.module_name}SoftSegmentLengthRatio_DIV")
+        segmentLengthRatio = cmds.createNode("divide", name=f"{self.side}_{self.module_name}SoftSegmentLengthRatio_DIV", ss=True)
         cmds.connectAttr(f"{stretch_multiply_nodes[0]}.output", f"{segmentLengthRatio}.input1")
         cmds.connectAttr(f"{stretch_multiply_nodes[1]}.output", f"{segmentLengthRatio}.input2")
 
-        lower_soft_height = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}LowerSoftHeight_MUL")
+        lower_soft_height = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}LowerSoftHeight_MUL", ss=True)
         cmds.connectAttr(f"{segmentLengthRatio}.output", f"{lower_soft_height}.input[1]")
         cmds.connectAttr(f"{soft_height}.output", f"{lower_soft_height}.input[0]")
 
-        lower_soft_blended_height = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}LowerSoftBlendedHeight_MUL")
+        lower_soft_blended_height = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}LowerSoftBlendedHeight_MUL", ss=True)
         cmds.connectAttr(f"{segmentLengthRatio}.output", f"{lower_soft_blended_height}.input[1]")
         cmds.connectAttr(f"{blend_twoAttrs}.output", f"{lower_soft_blended_height}.input[0]")
 
-        lower_height_squared = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}LowerSoftHeightSquared_MUL")
+        lower_height_squared = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}LowerSoftHeightSquared_MUL", ss=True)
         cmds.connectAttr(f"{lower_soft_height}.output", f"{lower_height_squared}.input[0]")
         cmds.connectAttr(f"{lower_soft_height}.output", f"{lower_height_squared}.input[1]")
 
-        lower_cos_value_squared = cmds.createNode("subtract", name=f"{self.side}_{self.module_name}LowerSoftCosValueSquared_SUB")
+        lower_cos_value_squared = cmds.createNode("subtract", name=f"{self.side}_{self.module_name}LowerSoftCosValueSquared_SUB", ss=True)
         cmds.connectAttr(f"{lower_height_squared}.output", f"{lower_cos_value_squared}.input2")
         cmds.setAttr(f"{lower_cos_value_squared}.input1", 1)
 
-        lower_blended_height_squared = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}LowerSoftBlendedHeightSquared_MUL")
+        lower_blended_height_squared = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}LowerSoftBlendedHeightSquared_MUL", ss=True)
         cmds.connectAttr(f"{lower_soft_blended_height}.output", f"{lower_blended_height_squared}.input[0]")
         cmds.connectAttr(f"{lower_soft_blended_height}.output", f"{lower_blended_height_squared}.input[1]")
 
-        soft_lower_scaler_squared = cmds.createNode("sum", name=f"{self.side}_{self.module_name}SoftLowerScalerSquared_SUM")
+        soft_lower_scaler_squared = cmds.createNode("sum", name=f"{self.side}_{self.module_name}SoftLowerScalerSquared_SUM", ss=True)
         cmds.connectAttr(f"{lower_blended_height_squared}.output", f"{soft_lower_scaler_squared}.input[1]")
         cmds.connectAttr(f"{lower_cos_value_squared}.output", f"{soft_lower_scaler_squared}.input[0]")
 
         # Upper arm output
-        lower_soft_scaler = cmds.createNode("power", name=f"{self.side}_{self.module_name}LowerSoftScaler_POW")
+        lower_soft_scaler = cmds.createNode("power", name=f"{self.side}_{self.module_name}LowerSoftScaler_POW", ss=True)
         cmds.setAttr(f"{lower_soft_scaler}.exponent", 0.5)
         cmds.connectAttr(f"{soft_lower_scaler_squared}.output", f"{lower_soft_scaler}.input")
 
@@ -537,14 +541,15 @@ class LimbModule(object):
         # --- Aligns --- #
  
         upper_arm_ik_aim_matrix = cmds.createNode("aimMatrix", name=f"{self.side}_{self.module_name}UpperIk_AIM", ss=True)
-        cmds.connectAttr(f"{self.hand_ik_ctl}.worldMatrix[0]", f"{upper_arm_ik_aim_matrix}.primaryTargetMatrix")
+        cmds.connectAttr(f"{self.ikHandleManager}", f"{upper_arm_ik_aim_matrix}.primaryTargetMatrix")
         cmds.connectAttr(f"{self.pv_ik_ctl}.worldMatrix", f"{upper_arm_ik_aim_matrix}.secondaryTargetMatrix")
         cmds.connectAttr(f"{self.root_ik_ctl}.worldMatrix", f"{upper_arm_ik_aim_matrix}.inputMatrix")
+        cmds.setAttr(f"{upper_arm_ik_aim_matrix}.primaryInputAxis", *self.primary_aim, type="double3")
 
-        self.upperArmIkWM = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}UpperIkWM_MMX")
-        fourByfour = cmds.createNode("fourByFourMatrix", name=f"{self.side}_{self.module_name}UpperIkLocal_F4X")
-        sin = cmds.createNode("sin", name=f"{self.side}_{self.module_name}UpperIkWM_SIN")
-        negate = cmds.createNode("negate", name=f"{self.side}_{self.module_name}UpperIkWM_NEGATE")
+        self.upperArmIkWM = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}UpperIkWM_MMX", ss=True)
+        fourByfour = cmds.createNode("fourByFourMatrix", name=f"{self.side}_{self.module_name}UpperIkLocal_F4X", ss=True)
+        sin = cmds.createNode("sin", name=f"{self.side}_{self.module_name}UpperIkWM_SIN", ss=True)
+        negate = cmds.createNode("negate", name=f"{self.side}_{self.module_name}UpperIkWM_NEGATE", ss=True)
 
         cmds.connectAttr(f"{upper_arm_ik_aim_matrix}.outputMatrix", f"{self.upperArmIkWM}.matrixIn[1]")
         cmds.connectAttr(f"{fourByfour}.output", f"{self.upperArmIkWM}.matrixIn[0]")
@@ -557,66 +562,80 @@ class LimbModule(object):
         cmds.connectAttr(f"{upper_arm_acos}.output", f"{sin}.input")
         cmds.connectAttr(f"{sin}.output", f"{negate}.input")
 
-        cmds.setAttr(upper_arm_ik_aim_matrix + ".secondaryInputAxis", *(0, 1, 0), type="double3")
         cmds.setAttr(upper_arm_ik_aim_matrix + ".secondaryMode", 1)
             
         # Lower
 
-        cosValueSquared = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}LowerCosValueSquared_MUL")
+        cosValueSquared = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}LowerCosValueSquared_MUL", ss=True)
         cmds.connectAttr(f"{lower_divide}.output", f"{cosValueSquared}.input[0]")
         cmds.connectAttr(f"{lower_divide}.output", f"{cosValueSquared}.input[1]")
 
-        lower_sin_value_squared = cmds.createNode("subtract", name=f"{self.side}_{self.module_name}LowerSinValueSquared_SUB")
+        lower_sin_value_squared = cmds.createNode("subtract", name=f"{self.side}_{self.module_name}LowerSinValueSquared_SUB", ss=True)
         cmds.connectAttr(f"{cosValueSquared}.output", f"{lower_sin_value_squared}.input2")
         cmds.setAttr(f"{lower_sin_value_squared}.input1", 1)
 
-        lower_sin_value_squared_clamped = cmds.createNode("max", name=f"{self.side}_{self.module_name}LowerSinValueSquared_MAX")
+        lower_sin_value_squared_clamped = cmds.createNode("max", name=f"{self.side}_{self.module_name}LowerSinValueSquared_MAX", ss=True)
         cmds.connectAttr(f"{lower_sin_value_squared}.output", f"{lower_sin_value_squared_clamped}.input[1]")
         cmds.setAttr(f"{lower_sin_value_squared_clamped}.input[0]", 0)
 
-        lower_sin = cmds.createNode("power", name=f"{self.side}_{self.module_name}LowerSin_POW")
+        lower_sin = cmds.createNode("power", name=f"{self.side}_{self.module_name}LowerSin_POW", ss=True)
         cmds.connectAttr(f"{lower_sin_value_squared_clamped}.output", f"{lower_sin}.input")
         cmds.setAttr(f"{lower_sin}.exponent", 0.5)
 
-        negate = cmds.createNode("negate", name=f"{self.side}_{self.module_name}LowerSin_NEGATE")
+        negate = cmds.createNode("negate", name=f"{self.side}_{self.module_name}LowerSin_NEGATE", ss=True)
         cmds.connectAttr(f"{lower_sin}.output", f"{negate}.input")
 
-        fourByfour = cmds.createNode("fourByFourMatrix", name=f"{self.side}_{self.module_name}LowerIkLocal_F4X")
+        fourByfour = cmds.createNode("fourByFourMatrix", name=f"{self.side}_{self.module_name}LowerIkLocal_F4X", ss=True)
       
         cmds.connectAttr(f"{negate_cos_value}.output", f"{fourByfour}.in11")
         cmds.connectAttr(f"{negate_cos_value}.output", f"{fourByfour}.in00")
         cmds.connectAttr(f"{lower_sin}.output", f"{fourByfour}.in10")
         cmds.connectAttr(f"{negate}.output", f"{fourByfour}.in01")
-        cmds.connectAttr(f"{soft_upper_length_scaled}.output", f"{fourByfour}.in30")
 
-        lower_wm_multmatrix = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}LowerIkWM_MMX")
+        if self.side == "R":
+            translate_negate = cmds.createNode("negate", name=f"{self.side}_{self.module_name}UpperTranslate_NEGATE", ss=True)
+            cmds.connectAttr(f"{soft_upper_length_scaled}.output", f"{translate_negate}.input")
+            cmds.connectAttr(f"{translate_negate}.output", f"{fourByfour}.in30")
+            cmds.setAttr(upper_arm_ik_aim_matrix + ".secondaryInputAxis", 0, -1, 0, type="double3") ########################## CAMBIO QUIZAS
+
+        else:
+            cmds.connectAttr(f"{soft_upper_length_scaled}.output", f"{fourByfour}.in30")
+            cmds.setAttr(upper_arm_ik_aim_matrix + ".secondaryInputAxis", 0, 1, 0, type="double3") ########################## CAMBIO QUIZAS
+
+
+        lower_wm_multmatrix = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}LowerIkWM_MMX", ss=True)
         cmds.connectAttr(f"{fourByfour}.output", f"{lower_wm_multmatrix}.matrixIn[0]")
         cmds.connectAttr(f"{self.upperArmIkWM}.matrixSum", f"{lower_wm_multmatrix}.matrixIn[1]")
 
         # Hand
 
-        lower_inverse_matrix = cmds.createNode("inverseMatrix", name=f"{self.side}_{self.module_name}LowerIkInverse_MTX")
+        lower_inverse_matrix = cmds.createNode("inverseMatrix", name=f"{self.side}_{self.module_name}LowerIkInverse_MTX", ss=True)
         cmds.connectAttr(f"{lower_wm_multmatrix}.matrixSum", f"{lower_inverse_matrix}.inputMatrix")
 
-        hand_local_matrix_multmatrix = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}EndBaseLocal_MMX")
-        cmds.connectAttr(f"{self.hand_ik_ctl}.worldMatrix[0]", f"{hand_local_matrix_multmatrix}.matrixIn[0]")
+        hand_local_matrix_multmatrix = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}EndBaseLocal_MMX", ss=True)
+        cmds.connectAttr(f"{self.ikHandleManager}", f"{hand_local_matrix_multmatrix}.matrixIn[0]")
         cmds.connectAttr(f"{lower_inverse_matrix}.outputMatrix", f"{hand_local_matrix_multmatrix}.matrixIn[1]")
 
-        hand_local_matrix = cmds.createNode("fourByFourMatrix", name=f"{self.side}_{self.module_name}EndLocal_F4X")
+        hand_local_matrix = cmds.createNode("fourByFourMatrix", name=f"{self.side}_{self.module_name}EndLocal_F4X", ss=True)
 
-        hand_wm_multmatrix = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}EndWM_MMX")
+        hand_wm_multmatrix = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}EndWM_MMX", ss=True)
         cmds.connectAttr(f"{hand_local_matrix}.output", f"{hand_wm_multmatrix}.matrixIn[0]")
         cmds.connectAttr(f"{lower_wm_multmatrix}.matrixSum", f"{hand_wm_multmatrix}.matrixIn[1]")
 
 
         for i in range(0, 3):
-            row_from_matrix = cmds.createNode("rowFromMatrix", name=f"{self.side}_{self.module_name}EndLocalAxis{i}_RFM")
+            row_from_matrix = cmds.createNode("rowFromMatrix", name=f"{self.side}_{self.module_name}EndLocalAxis{i}_RFM", ss=True)
             cmds.connectAttr(f"{hand_local_matrix_multmatrix}.matrixSum", f"{row_from_matrix}.matrix")
             cmds.setAttr(f"{row_from_matrix}.input", i)
             for z, attr in enumerate(["X", "Y", "Z", "W"]):
                 cmds.connectAttr(f"{row_from_matrix}.output{attr}", f"{hand_local_matrix}.in{i}{z}")
 
-        cmds.connectAttr(f"{soft_lower_length_scaled}.output", f"{hand_local_matrix}.in30")
+        if self.side == "R":
+            translate_negate = cmds.createNode("negate", name=f"{self.side}_{self.module_name}LowerTranslate_NEGATE", ss=True)
+            cmds.connectAttr(f"{soft_lower_length_scaled}.output", f"{translate_negate}.input")
+            cmds.connectAttr(f"{translate_negate}.output", f"{hand_local_matrix}.in30")
+        else:
+            cmds.connectAttr(f"{soft_lower_length_scaled}.output", f"{hand_local_matrix}.in30")
 
         self.ik_wm = [f"{self.upperArmIkWM}.matrixSum", f"{lower_wm_multmatrix}.matrixSum", f"{hand_wm_multmatrix}.matrixSum"]
 
@@ -665,6 +684,7 @@ class LimbModule(object):
         cmds.connectAttr(f"{nonRollPick}.outputMatrix", f"{nonRollAim}.inputMatrix")
         cmds.connectAttr(f"{nonRollAlign}.outputMatrix", f"{nonRollAim}.secondaryTargetMatrix")
         cmds.connectAttr(f"{self.blend_wm[1]}", f"{nonRollAim}.primaryTargetMatrix")
+        cmds.setAttr(f"{nonRollAim}.primaryInputAxis", *self.primary_aim, type="double3")
         cmds.setAttr(f"{nonRollAim}.secondaryInputAxis", *self.secondary_aim, type="double3")
         cmds.setAttr(f"{nonRollAim}.secondaryTargetVector", *self.secondary_aim, type="double3")
         cmds.setAttr(f"{nonRollAim}.secondaryMode", 2)
@@ -673,10 +693,6 @@ class LimbModule(object):
 
         self.shoulder_rotate_matrix = self.blend_wm[0]
         self.blend_wm[0] = f"{nonRollAim}.outputMatrix"
-
-        for matrix in self.blend_wm:
-            joint = cmds.createNode("joint", name=f"joint_JNT", ss=True)
-            cmds.connectAttr(f"{matrix}", f"{joint}.offsetParentMatrix")
 
         self.bendys()
 
@@ -770,10 +786,7 @@ class LimbModule(object):
 
             for i in range(self.twist_number):
                 t = 0.95 if i == self.twist_number - 1 else i / (float(self.twist_number) - 1)
-                cmds.select(clear=True)
-                joint = cmds.joint(name=f"{self.side}_{self.module_name}{bendy}0{i+1}_JNT", rad=0.5)
-                cmds.parent(joint, self.skinnging_grp)
-
+                joint = cmds.createNode("joint", name=f"{self.side}_{self.module_name}{bendy}0{i+1}_JNT", ss=True, parent=self.skinnging_grp)
 
                 pointMatrixWeights = de_boors.pointOnCurveWeights(cvMatrices, t, degree=2)
 
@@ -846,13 +859,271 @@ class LimbModule(object):
                 joints.append(joint)
 
             if "Lower" in bendy:
-                cmds.select(clear=True)
-                joint = cmds.joint(name=f"{self.side}_{self.module_name}{bendy}0{i+2}_JNT", rad=0.5)
-                cmds.parent(joint, self.skinnging_grp)
+                joint = cmds.createNode("joint", name=f"{self.side}_{self.module_name}{bendy}0{i+2}_JNT", ss=True, parent=self.skinnging_grp)
                 cmds.connectAttr(cvMatrices[-1], f"{joint}.offsetParentMatrix")
                 joints.append(joint)
 
 
+    def scapula(self):
+
+        self.scapula_ctl, self.scapula_ctl_grp = controller_creator(
+            name=f"{self.side}_scapula",
+            suffixes=["GRP", "OFF", "ANM"],
+            lock=["sx", "sz", "sy", "visibility"],
+            ro=True,
+            parent=self.masterWalk_ctl
+        )
+
+        aim_matrix_scapula = cmds.createNode("aimMatrix", name=f"{self.side}_scapula_AIM", ss=True)
+        cmds.connectAttr(f"{self.scapula_guide}.worldMatrix[0]", f"{aim_matrix_scapula}.inputMatrix")
+        cmds.connectAttr(f"{self.guides_matrix[0]}.outputMatrix", f"{aim_matrix_scapula}.primaryTargetMatrix")
+        cmds.setAttr(f"{aim_matrix_scapula}.primaryInputAxis", *self.primary_aim, type="double3")
+
+        cmds.connectAttr(f"{aim_matrix_scapula}.outputMatrix", f"{self.scapula_ctl_grp[0]}.offsetParentMatrix")
+
+        module_joint = cmds.createNode("joint", name=self.scapula_guide.replace('_GUIDE', '_JNT'), ss=True, parent=self.skinnging_grp)
+
+        cmds.connectAttr(f"{self.scapula_ctl}.worldMatrix[0]", f"{module_joint}.offsetParentMatrix")
+
+        cmds.reorder(module_joint, front=True)
+
+    def reverse_foot(self):
+        """
+        Reverse foot setup for leg module.  
+        This method creates the foot controls and sets up the necessary connections.
+
+        """
+
+        # FK CONTROLLERS
+
+        ctl, ctl_grp = controller_creator(
+            name=self.leg_guides[0].replace("_GUIDE.worldMatrix[0]", "Fk"),
+            suffixes=["GRP", "ANM"],
+            lock=["scaleX", "scaleY", "scaleZ", "visibility"],
+            ro=True,
+        )
+        
+        cmds.parent(ctl_grp[0], self.fk_ctls[-1])
+
+        offset_multMatrix = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}FkOffset0{1}_MMX", ss=True)
+        inverse_matrix = cmds.createNode("inverseMatrix", name=f"{self.side}_{self.module_name}FkOffset0{1}_IMX", ss=True)
+        cmds.connectAttr(f"{self.leg_guides[0]}", f"{offset_multMatrix}.matrixIn[0]")
+
+        cmds.connectAttr(f"{self.guides_matrix[2]}.outputMatrix", f"{inverse_matrix}.inputMatrix")
+
+        cmds.connectAttr(f"{inverse_matrix}.outputMatrix", f"{offset_multMatrix}.matrixIn[1]")
+    
+        cmds.connectAttr(f"{offset_multMatrix}.matrixSum", f"{ctl_grp[0]}.offsetParentMatrix")
+
+        for attr in ["tx", "ty", "tz", "rx", "ry", "rz"]:
+            cmds.setAttr(f"{ctl_grp[0]}.{attr}", 0)
+
+        self.fk_ctls.append(ctl)
+        self.fk_grps.append(ctl_grp) 
+
+
+        # IK CONTROLLERS
+        reverse_foot_guide = "" if self.module_name == "leg" else self.module_name
+        bank_name = "bankOut" if reverse_foot_guide == "" else "BankOut"
+        self.leg_ik_guides = guide_import(f"{self.side}_{reverse_foot_guide}{bank_name}_GUIDE", all_descendents=True, path=None)
+
+        self.ik_leg_guides = [f"{self.leg_ik_guides[0]}.worldMatrix[0]", f"{self.leg_ik_guides[1]}.worldMatrix[0]", f"{self.leg_ik_guides[2]}.worldMatrix[0]", self.leg_guides[1], self.leg_guides[0]]
+
+        self.reverse_ctl = []
+        self.reverse_ctl_grp = []
+
+        for guide in self.ik_leg_guides:
+
+
+            ctl, ctl_grp = controller_creator(
+                name=guide.replace("_GUIDE.worldMatrix[0]", "Ik"),
+                suffixes=["GRP", "SDK","ANM"],
+                lock=["tx","tz","ty","sx","sz","sy","visibility"],
+                ro=True,
+                parent=self.ik_controllers
+            )
+
+            cmds.connectAttr(f"{guide}", f"{ctl_grp[0]}.offsetParentMatrix")
+
+            cmds.parent(ctl_grp[0], self.reverse_ctl[-1] if self.reverse_ctl else self.hand_ik_ctl)                
+
+            self.reverse_ctl.append(ctl)
+            self.reverse_ctl_grp.append(ctl_grp)
+
+        cmds.connectAttr(f"{self.reverse_ctl[-1]}.worldMatrix[0]", f"{self.ikHandleManager.replace('matrixSum', 'matrixIn[2]')}", force=True)
+
+        cmds.transformLimits(self.reverse_ctl[-1], rx=(0, 45), erx=(1, 0))
+
+        # IK HANDLE WIP
+
+        self.frontRoll_ctl, self.frontRoll_grp = controller_creator(
+                name=f"{self.side}_{self.module_name}frontRoll",
+                suffixes=["GRP", "ANM"],
+                lock=["sx","sz","sy","visibility"],
+                ro=True,
+                parent=self.reverse_ctl[-1]
+            )
+        for attr in ["tx", "ty", "tz", "rx", "ry", "rz"]:
+            cmds.setAttr(f"{self.frontRoll_grp[0]}.{attr}", 0)
+
+        
+
+        ball_distance = cmds.createNode("distanceBetween", name=f"{self.side}_{self.module_name}BallDistance", ss=True)
+        cmds.connectAttr(f"{self.leg_guides[0]}", f"{ball_distance}.inMatrix1")
+        cmds.connectAttr(f"{self.guides[-1]}.worldMatrix[0]", f"{ball_distance}.inMatrix2")
+
+        position_forward_fourbyfour = cmds.createNode("fourByFourMatrix", name=f"{self.side}_{self.module_name}PositionForward_4B4", ss=True)
+        cmds.connectAttr(f"{ball_distance}.distance", f"{position_forward_fourbyfour}.in32") # z axis
+
+        ankle_ball_aim_matrix = cmds.createNode("aimMatrix", name=f"{self.side}_{self.module_name}AnkleBall_AIM", ss=True)
+        cmds.connectAttr(f"{self.blend_wm[-1]}", f"{ankle_ball_aim_matrix}.inputMatrix")
+        cmds.connectAttr(f"{self.reverse_ctl[-1]}.worldMatrix[0]", f"{ankle_ball_aim_matrix}.primaryTargetMatrix")
+        cmds.connectAttr(f"{self.reverse_ctl[-1]}.worldMatrix[0]", f"{ankle_ball_aim_matrix}.secondaryTargetMatrix")
+        cmds.setAttr(f"{ankle_ball_aim_matrix}.primaryInputAxis", 0,0,1, type="double3")
+        cmds.setAttr(f"{ankle_ball_aim_matrix}.secondaryInputAxis", 0,1,0, type="double3")
+        cmds.setAttr(f"{ankle_ball_aim_matrix}.secondaryTargetVector", 0,1,0, type="double3")
+        cmds.setAttr(f"{ankle_ball_aim_matrix}.secondaryMode", 2)
+
+        ball_wm_no_rotation = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}BallWMNoRotation_MMX", ss=True)
+        cmds.connectAttr(f"{position_forward_fourbyfour}.output", f"{ball_wm_no_rotation}.matrixIn[0]")
+        cmds.connectAttr(f"{ankle_ball_aim_matrix}.outputMatrix", f"{ball_wm_no_rotation}.matrixIn[1]")
+
+        ball_wm = cmds.createNode("aimMatrix", name=f"{self.side}_{self.module_name}BallWM_AIM", ss=True)
+        cmds.connectAttr(f"{ball_wm_no_rotation}.matrixSum", f"{ball_wm}.inputMatrix")
+        cmds.connectAttr(f"{self.reverse_ctl[-2]}.worldMatrix[0]", f"{ball_wm}.primaryTargetMatrix")
+        cmds.connectAttr(f"{self.reverse_ctl[-2]}.worldMatrix[0]", f"{ball_wm}.secondaryTargetMatrix")
+        cmds.setAttr(f"{ball_wm}.primaryInputAxis", 0,0,1, type="double3")
+        cmds.setAttr(f"{ball_wm}.secondaryInputAxis", 0,1,0, type="double3")
+        cmds.setAttr(f"{ball_wm}.secondaryTargetVector", 0,1,0, type="double3")
+        cmds.setAttr(f"{ball_wm}.secondaryMode", 2)
+
+        front_roll_wm = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}FrontRollWM_MMX", ss=True)
+        cmds.connectAttr(f"{self.frontRoll_ctl}.worldMatrix[0]", f"{front_roll_wm}.matrixIn[0]")
+        cmds.connectAttr(f"{self.frontRoll_grp[0]}.worldInverseMatrix[0]", f"{front_roll_wm}.matrixIn[1]")
+        cmds.connectAttr(f"{ball_wm}.outputMatrix", f"{front_roll_wm}.matrixIn[2]")
+
+        cmds.addAttr(self.hand_ik_ctl, shortName="reverseFoot", niceName="Reverse foot  ———", enumName="———",attributeType="enum", keyable=True)
+        cmds.setAttr(self.hand_ik_ctl+".reverseFoot", channelBox=True, lock=True)
+        cmds.addAttr(self.hand_ik_ctl, shortName="roll", niceName="Roll",defaultValue=0, keyable=True)
+        cmds.addAttr(self.hand_ik_ctl, shortName="rollLiftAngle", niceName="Roll Lift Angle",minValue=0,defaultValue=45, keyable=True)
+        cmds.addAttr(self.hand_ik_ctl, shortName="rollStraightAngle", niceName="Roll Straight Angle",minValue=0,defaultValue=90, keyable=True)
+        cmds.addAttr(self.hand_ik_ctl, shortName="bank", niceName="Bank",defaultValue=0, keyable=True)
+        cmds.addAttr(self.hand_ik_ctl, shortName="ankleTwist", niceName="Ankle Twist",defaultValue=0, keyable=True)
+        cmds.addAttr(self.hand_ik_ctl, shortName="ballTwist", niceName="Ball Twist",defaultValue=0, keyable=True)
+        cmds.addAttr(self.hand_ik_ctl, shortName="tipTwist", niceName="Tip Twist",defaultValue=0, keyable=True)
+        cmds.addAttr(self.hand_ik_ctl, shortName="heelTwist", niceName="Heel Twist",defaultValue=0, keyable=True)
+
+        # # ----ADDING THE ROLL----#
+
+        # ### GENERATED CODE (direct assignments) ###
+
+        rollStraightAnglePercentage_RMV = cmds.createNode("remapValue", 
+            name=f"{self.side}_rollStraightAnglePercentage_RMV", ss=True)
+
+        rollLiftAnglePercentage_RMV = cmds.createNode("remapValue", 
+            name=f"{self.side}_rollLiftAnglePercentage_RMV", ss=True)
+
+        rollStraightAnglePercentage_REV = cmds.createNode("reverse", 
+            name=f"{self.side}_rollStraightAnglePercentage_REV", ss=True)
+
+        rollLiftAngleEnable_MDN = cmds.createNode("multiplyDivide", 
+            name=f"{self.side}_rollLiftAngleEnable_MDN", ss=True)
+
+        rollStrightAngle_MDN = cmds.createNode("multiplyDivide", 
+            name=f"{self.side}_rollStrightAngle_MDN", ss=True)
+
+        rollLiftAngle_MDN = cmds.createNode("multiplyDivide", 
+            name=f"{self.side}_rollLiftAngle_MDN", ss=True)
+
+        rollStrightAngleNegate_MDN = cmds.createNode("multiplyDivide", 
+            name=f"{self.side}_rollStrightAngleNegate_MDN", ss=True)
+
+        rollHeel_CLM = cmds.createNode("clamp", 
+            name=f"{self.side}_rollHeel_CLM", ss=True)
+
+        footBank_CLM = cmds.createNode("clamp", 
+            name=f"{self.side}_footBank_CLM", ss=True)
+
+        rollLiftAngleNegate_MDN = cmds.createNode("multiplyDivide", 
+            name=f"{self.side}_rollLiftAngleNegate_MDN", ss=True)
+
+
+        # ---------------- CONNECTIONS ---------------- #
+
+        cmds.connectAttr(rollStraightAnglePercentage_RMV + ".outValue", rollStrightAngle_MDN + ".input1X")
+        cmds.connectAttr(rollStraightAnglePercentage_RMV + ".outValue", rollStraightAnglePercentage_REV + ".inputX")
+        cmds.connectAttr(f"{self.hand_ik_ctl}.roll", rollStraightAnglePercentage_RMV + ".inputValue")
+        cmds.connectAttr(f"{self.hand_ik_ctl}.rollLiftAngle", rollStraightAnglePercentage_RMV + ".inputMin")
+        cmds.connectAttr(f"{self.hand_ik_ctl}.rollStraightAngle", rollStraightAnglePercentage_RMV + ".inputMax")
+
+        cmds.connectAttr(f"{self.hand_ik_ctl}.roll", rollLiftAnglePercentage_RMV + ".inputValue")
+        cmds.connectAttr(f"{self.hand_ik_ctl}.roll", rollHeel_CLM + ".inputR")
+        cmds.connectAttr(f"{self.hand_ik_ctl}.roll", rollLiftAngle_MDN + ".input2X")
+        cmds.connectAttr(f"{self.hand_ik_ctl}.roll", rollStrightAngle_MDN + ".input2X")
+
+        cmds.connectAttr(f"{self.hand_ik_ctl}.rollLiftAngle", rollLiftAnglePercentage_RMV + ".inputMax")
+        cmds.connectAttr(f"{self.hand_ik_ctl}.bank", footBank_CLM + ".inputG")
+        cmds.connectAttr(f"{self.hand_ik_ctl}.bank", footBank_CLM + ".inputR")
+
+        cmds.setAttr(rollStrightAngleNegate_MDN + ".input2X", 1)
+        cmds.setAttr(rollLiftAngleNegate_MDN + ".input2X", 1)
+        cmds.setAttr(rollHeel_CLM + ".minR", -360)
+
+        if self.side == "L":
+            cmds.setAttr(footBank_CLM + ".minG", -360)
+            cmds.setAttr(footBank_CLM + ".maxR", 360)
+        elif self.side == "R":
+            cmds.setAttr(footBank_CLM + ".minR", 360)
+            cmds.setAttr(footBank_CLM + ".maxG", -360)
+
+        cmds.connectAttr(rollLiftAnglePercentage_RMV + ".outValue", rollLiftAngleEnable_MDN + ".input2X")
+        cmds.connectAttr(rollStraightAnglePercentage_REV + ".outputX", rollLiftAngleEnable_MDN + ".input1X")
+        cmds.connectAttr(rollLiftAngleEnable_MDN + ".outputX", rollLiftAngle_MDN + ".input1X")
+        cmds.connectAttr(rollStrightAngle_MDN + ".outputX", rollStrightAngleNegate_MDN + ".input1X")
+        cmds.connectAttr(rollLiftAngle_MDN + ".outputX", rollLiftAngleNegate_MDN + ".input1X")
+
+        cmds.connectAttr(footBank_CLM + ".outputR", f"{self.reverse_ctl_grp[1][1]}.rotateZ")
+        cmds.connectAttr(footBank_CLM + ".outputG", f"{self.reverse_ctl_grp[0][1]}.rotateZ")
+        cmds.connectAttr(rollHeel_CLM + ".outputR", f"{self.reverse_ctl_grp[2][1]}.rotateX")
+        cmds.connectAttr(rollStrightAngleNegate_MDN + ".outputX", f"{self.reverse_ctl_grp[3][1]}.rotateX")
+        cmds.connectAttr(rollLiftAngleNegate_MDN + ".outputX", f"{self.reverse_ctl_grp[4][1]}.rotateX")
+
+        cmds.connectAttr(f"{self.hand_ik_ctl}.heelTwist", f"{self.reverse_ctl_grp[2][1]}.rotateY")
+        cmds.connectAttr(f"{self.hand_ik_ctl}.tipTwist", f"{self.reverse_ctl_grp[3][1]}.rotateY")
+        cmds.connectAttr(f"{self.hand_ik_ctl}.ballTwist", f"{self.reverse_ctl_grp[4][1]}.rotateY")
+        cmds.connectAttr(f"{self.hand_ik_ctl}.ankleTwist", self.hand_ik_ctl_grp[1] + ".rotateY")
+
+        blendMatrix = cmds.createNode("blendMatrix", name=f"{self.side}_{self.module_name}Ball_BLM", ss=True)
+        cmds.connectAttr(f"{front_roll_wm}.matrixSum", f"{blendMatrix}.inputMatrix")
+        cmds.connectAttr(f"{self.fk_ctls[-1]}.worldMatrix[0]", f"{blendMatrix}.target[0].targetMatrix")
+        cmds.connectAttr(f"{self.switch_ctl}.switchIkFk", f"{blendMatrix}.target[0].weight")
+
+        ball_joint = cmds.createNode("joint", name=f"{self.side}_{self.module_name}Ball_JNT", ss=True, parent=self.skinnging_grp)
+
+        cmds.connectAttr(f"{blendMatrix}.outputMatrix", f"{ball_joint}.offsetParentMatrix") 
+
+        # cmds.select(clear=True)
+        # joint_blend = cmds.joint(name=self.fk_joints[-1].replace("Fk_JNT", "Blend_JNT"), rad=0.5)
+        # blendMatrix = cmds.createNode("blendMatrix", name=f"{self.side}_{self.module_name}0{i+1}_BLM", ss=True)
+        # cmds.connectAttr(f"{self.feet_joints[1]}.worldMatrix[0]", f"{blendMatrix}.inputMatrix")
+        # cmds.connectAttr(f"{self.fk_joints[-1]}.worldMatrix[0]", f"{blendMatrix}.target[0].targetMatrix")
+        # cmds.connectAttr(f"{self.switch_ctl}.switchIkFk", f"{blendMatrix}.target[0].weight")
+        
+        # cmds.connectAttr(f"{blendMatrix}.outputMatrix", f"{joint_blend}.offsetParentMatrix")
+
+        # cmds.parent(joint_blend, self.individual_module_grp)
+
+        # cmds.select(clear=True)
+        # joint = cmds.joint(name=joint_blend.replace("Blend_JNT", "Foot_JNT"), rad=0.5)
+        # cmds.parent(joint, self.skinnging_grp)
+        # cmds.connectAttr(f"{joint_blend}.worldMatrix[0]", f"{joint}.offsetParentMatrix")
+
+
+        # self.blend_chain.append(joint)
+
+        # skin_joints = cmds.listRelatives(self.skinnging_grp, type="joint", allDescendents=True)[0]
+
+        # ss.fk_switch(self.switch_ctl, sources = [skin_joints])
 
 class ArmModule(LimbModule):
     """
@@ -877,21 +1148,138 @@ class ArmModule(LimbModule):
 
         self.oriented_ik = False
 
+        self.ikHandleEnabled = False
+
         # Arm-specific setup
         if self.side == "L":
             self.primary_aim = (1, 0, 0)
             self.secondary_aim = (0, -1, 0)
-            self.prefered_angle = (0, -1, 0)
 
         elif self.side == "R":
             self.primary_aim = (-1, 0, 0)
-            self.secondary_aim = (0, 0, -1)
-            self.prefered_angle = (0, -1, 0)
+            self.secondary_aim = (0, 1, 0)
 
         self.default_ik = 1
 
     def make(self):
         
+        super().make()
+        self.scapula()
+
+        self.data_exporter.append_data(
+            f"{self.side}_{self.module_name}Module",
+            {
+                "skinning_transform": self.skinnging_grp,
+                "fk_ctl": self.fk_ctls,
+                "pv_ctl": self.pv_ik_ctl,   
+                "root_ctl": self.root_ik_ctl,
+                "end_ik": self.hand_ik_ctl,
+                "scapula_ctl": self.scapula_ctl,
+            }
+        )
+
+class FrontLegModule(LimbModule):
+    """
+    Class for moditifying limb module specific to arms.
+    Inherits from LimbModule.
+    """
+
+    def __init__(self, guide_name):
+        side = guide_name.split("_")[0]
+        super().__init__(side)
+
+        self.module_name = "frontLeg"
+
+        self.guides = guide_import(guide_name, all_descendents=True, path=None)
+
+        if cmds.attributeQuery("moduleName", node=self.guides[0], exists=True):
+            self.enum_str = cmds.attributeQuery("moduleName", node=self.guides[0], listEnum=True)[0]
+
+        self.scapula_guide = self.guides[0]
+
+        self.guides = self.guides[1:]
+
+        self.ikHandleEnabled = True
+
+        if len(self.guides) > 3:
+            self.leg_guides = [f"{self.guides[3]}.worldMatrix[0]", f"{self.guides[4]}.worldMatrix[0]"]
+            self.guides = [self.guides[0], self.guides[1], self.guides[2]]
+
+
+        self.oriented_ik = True
+
+        # Arm-specific setup
+        if self.side == "L":
+            self.primary_aim = (1, 0, 0)
+            self.secondary_aim = (0, -1, 0)
+
+        elif self.side == "R":
+            self.primary_aim = (-1, 0, 0)
+            self.secondary_aim = (0, 1, 0)
+
+        self.default_ik = 0
+
+    def make(self):
+        
+        super().make()
+        self.scapula()
+
+        self.data_exporter.append_data(
+            f"{self.side}_{self.module_name}Module",
+            {
+                "skinning_transform": self.skinnging_grp,
+                "fk_ctl": self.fk_ctls,
+                "pv_ctl": self.pv_ik_ctl,   
+                "root_ctl": self.root_ik_ctl,
+                "end_ik": self.hand_ik_ctl,
+                "scapula_ctl": self.scapula_ctl,
+
+            }
+        )
+
+    def curvature(self):
+        super().curvature()
+        self.reverse_foot()
+
+class BackLegModule(LimbModule):
+    """
+    Class for moditifying limb module specific to legs.
+    Inherits from LimbModule.
+    """
+
+    def __init__(self, guide_name):
+        side = guide_name.split("_")[0]
+        super().__init__(side)
+
+        self.module_name = "backLeg"
+
+        self.guides = guide_import(guide_name, all_descendents=True, path=None)
+        if cmds.attributeQuery("moduleName", node=self.guides[0], exists=True):
+            self.enum_str = cmds.attributeQuery("moduleName", node=self.guides[0], listEnum=True)[0]
+
+        if len(self.guides) > 3:
+            self.leg_guides = [f"{self.guides[3]}.worldMatrix[0]", f"{self.guides[4]}.worldMatrix[0]"]
+            self.guides = [self.guides[0], self.guides[1], self.guides[2]]
+
+        self.oriented_ik = True
+        self.ikHandleEnabled = True
+
+        # Leg-specific setup
+        if self.side == "L":
+            self.primary_aim = (1, 0, 0)
+            self.secondary_aim = (0, 0, -1)
+            self.prefered_angle = (0, 1, 0)
+
+        elif self.side == "R":
+            self.primary_aim = (-1, 0, 0)
+            self.secondary_aim = (0, 0, 1)
+            self.prefered_angle = (0, 1, 0)
+
+        self.default_ik = 0
+
+
+
+    def make(self):
         super().make()
 
         self.data_exporter.append_data(
@@ -905,10 +1293,73 @@ class ArmModule(LimbModule):
             }
         )
 
-cmds.file(new=True, force=True)
+    def curvature(self):
+        super().curvature()
+        self.reverse_foot()
 
-core.DataManager.set_guide_data("D:/git/maya/biped_autorig/guides/moana_01.guides")
-core.DataManager.set_ctls_data("D:/git/maya/biped_autorig/curves/elephant_02.ctls")
+class LegModule(LimbModule):
+    """
+    Class for moditifying limb module specific to legs.
+    Inherits from LimbModule.
+    """
 
-basic_structure.create_basic_structure(asset_name="moana_02")
-a = ArmModule("L_clavicle_GUIDE").make()
+    def __init__(self, guide_name):
+        side = guide_name.split("_")[0]
+
+        super().__init__(side)
+
+        self.module_name = "leg"
+
+        self.guides = guide_import(guide_name, all_descendents=True, path=None)
+        if cmds.attributeQuery("moduleName", node=self.guides[0], exists=True):
+            self.enum_str = cmds.attributeQuery("moduleName", node=self.guides[0], listEnum=True)[0]
+
+        if len(self.guides) > 3:
+            self.leg_guides = [f"{self.guides[3]}.worldMatrix[0]", f"{self.guides[4]}.worldMatrix[0]"]
+            self.guides = [self.guides[0], self.guides[1], self.guides[2]]
+
+        self.oriented_ik = True
+        self.ikHandleEnabled = True
+
+
+        # Leg-specific setup
+        if self.side == "L":
+            self.primary_aim = (1, 0, 0)
+            self.secondary_aim = (0, -1, 0)
+
+
+        elif self.side == "R":
+            self.primary_aim = (-1, 0, 0)
+            self.secondary_aim = (0, 1, 0)
+
+        self.default_ik = 0
+
+
+
+    def make(self):
+        super().make()
+        self.reverse_foot()
+
+        self.data_exporter.append_data(
+            f"{self.side}_{self.module_name}Module",
+            {
+                "skinning_transform": self.skinnging_grp,
+                "fk_ctl": self.fk_ctls,
+                "pv_ctl": self.pv_ik_ctl,   
+                "root_ctl": self.root_ik_ctl,
+                "end_ik": self.hand_ik_ctl
+            }
+        )
+
+
+
+# cmds.file(new=True, force=True)
+
+# core.DataManager.set_guide_data("D:/git/maya/biped_autorig/guides/moana_01.guides")
+# core.DataManager.set_ctls_data("D:/git/maya/biped_autorig/curves/elephant_02.ctls")
+
+# basic_structure.create_basic_structure(asset_name="moana_02")
+# a = LegModule("L_hip_GUIDE").make()
+# a = LegModule("R_hip_GUIDE").make()
+# a = ArmModule("L_clavicle_GUIDE").make()
+# a = ArmModule("R_clavicle_GUIDE").make()
