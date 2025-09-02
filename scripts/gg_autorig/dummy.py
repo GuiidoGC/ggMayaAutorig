@@ -1,42 +1,89 @@
 import maya.cmds as cmds
 
-# matrix_nodes = []
-# for i in range(1, 11):
-#     percentatge = (i-1) / len(range(1, 11))
-#     motionPath = cmds.createNode("motionPath", name=f"R_ear0{i}_MPA", ss=True)
-#     cmds.connectAttr(f"R_ear_CRVShape.worldSpace[0]", f"{motionPath}.geometryPath", force=True)
+
+def bendy_twist(self, twist_number=5, degree=2, blend_chain=["L_shoulderDr_JNT", "L_elbowDr_JNT"], suffix=f"L_upperArm"):
+    
+    cvMatrices = [self.blend_wm[i], f"{ctl}.worldMatrix[0]", self.blend_wm[i+1]]
+
+    joints = []
+
+    self.twist_number = 5
+
+    for i in range(self.twist_number):
+        t = 0.95 if i == self.twist_number - 1 else i / (float(self.twist_number) - 1)
+        joint = cmds.createNode("joint", name=f"{self.side}_{self.module_name}{bendy}0{i+1}_JNT", ss=True, parent=self.skinnging_grp)
+
+        pointMatrixWeights = de_boors.pointOnCurveWeights(cvMatrices, t, degree=2)
+
+        pma_node = cmds.createNode('plusMinusAverage', name=f"{self.side}_{self.module_name}{bendy}0{i+1}_PMA", ss=True)
+        cmds.setAttr(f"{pma_node}.operation", 1)
+
+        pointMatrixNode = cmds.createNode("wtAddMatrix", name=f"{self.side}_{self.module_name}{bendy}0{i+1}_PMX", ss=True)
+        pointMatrix = f"{pointMatrixNode}.matrixSum"
+
+        # Scale preservation
+        for index, (matrix, weight) in enumerate(pointMatrixWeights):
+            md = cmds.createNode('multiplyDivide', name=f"{self.side}_{self.module_name}{bendy}0{i+1}_MDV", ss=True)
+            cmds.setAttr(f"{md}.input2X", weight)
+            cmds.setAttr(f"{md}.input2Y", weight)
+            cmds.setAttr(f"{md}.input2Z", weight)
+            decomposeNode = cmds.createNode("decomposeMatrix", name=f"{self.side}_{self.module_name}{bendy}0{i+1}_DCM", ss=True)
+            cmds.connectAttr(f"{matrix}", f"{decomposeNode}.inputMatrix", force=True)
+            cmds.connectAttr(f"{decomposeNode}.outputScale", f"{md}.input1", force=True)               
+
+            cmds.connectAttr(f"{md}.output", f"{pma_node}.input3D[{index}]", force=True)
+
+        # Joint positioning
+        for index, (matrix, weight) in enumerate(pointMatrixWeights):
+            cmds.connectAttr(matrix, f"{pointMatrixNode}.wtMatrix[{index}].matrixIn")
+            float_constant = cmds.createNode("floatConstant", name=f"{self.side}_{self.module_name}{bendy}0{i+1}_FLM", ss=True)
+            cmds.setAttr(f"{float_constant}.inFloat", weight)
+            cmds.connectAttr(f"{float_constant}.outFloat", f"{pointMatrixNode}.wtMatrix[{index}].weightIn", force=True)
+        
+        # Joint Tangent Matrix
+        tangentMatrixWeights = de_boors.tangentOnCurveWeights(cvMatrices, t, degree=2)
+
+        tangentMatrixNode = cmds.createNode("wtAddMatrix", name=f"{self.side}_{self.module_name}{bendy}0{i+1}_WTADD", ss=True)
+        tangentMatrix = f"{tangentMatrixNode}.matrixSum"
+        for index, (matrix, weight) in enumerate(tangentMatrixWeights):
+            cmds.connectAttr(matrix, f"{tangentMatrixNode}.wtMatrix[{index}].matrixIn")
+            float_constant = cmds.createNode("floatConstant", name=f"{self.side}_{self.module_name}{bendy}0{i+1}_FLM", ss=True)
+            cmds.setAttr(f"{float_constant}.inFloat", weight)
+            cmds.connectAttr(f"{float_constant}.outFloat", f"{tangentMatrixNode}.wtMatrix[{index}].weightIn", force=True)
+
+        aimMatrixNode = cmds.createNode("aimMatrix", name=f"{self.side}_{self.module_name}{bendy}0{i+1}_AMX", ss=True)
+        cmds.connectAttr(pointMatrix, f"{aimMatrixNode}.inputMatrix")
+        cmds.connectAttr(tangentMatrix, f"{aimMatrixNode}.primaryTargetMatrix")
+        cmds.setAttr(f"{aimMatrixNode}.primaryMode", 1)
+        cmds.setAttr(f"{aimMatrixNode}.primaryInputAxis", *self.primary_aim)
+        cmds.setAttr(f"{aimMatrixNode}.secondaryInputAxis", *self.secondary_aim)
+        cmds.setAttr(f"{aimMatrixNode}.secondaryMode", 0)
+        aimMatrixOutput = f"{aimMatrixNode}.outputMatrix"
+
+        pickMatrixNode = cmds.createNode("pickMatrix", name=f"{self.side}_{self.module_name}{bendy}0{i+1}_PKMX", ss=True)
+        cmds.connectAttr(aimMatrixOutput, f"{pickMatrixNode}.inputMatrix")
+        cmds.setAttr(f"{pickMatrixNode}.useScale", False)
+        cmds.setAttr(f"{pickMatrixNode}.useShear", False)
+        outputMatrix = f"{pickMatrixNode}.outputMatrix"
+
+        decomposeNode = cmds.createNode("decomposeMatrix", name=f"{self.side}_{self.module_name}{bendy}0{i+1}_DCM", ss=True)
+        cmds.connectAttr(outputMatrix, f"{decomposeNode}.inputMatrix")
+
+        composeNode = cmds.createNode("composeMatrix", name=f"{self.side}_{self.module_name}{bendy}0{i+1}_CPM", ss=True)
+        cmds.connectAttr(f"{decomposeNode}.outputTranslate", f"{composeNode}.inputTranslate")   
+        cmds.connectAttr(f"{decomposeNode}.outputRotate", f"{composeNode}.inputRotate")
+
+        cmds.connectAttr(f"{pma_node}.output3D", f"{composeNode}.inputScale", force=True)
 
 
-#     matrix_node = cmds.createNode('fourByFourMatrix', name=f"R_ear0{i}_4B4M", ss=True)
 
+        cmds.connectAttr(f"{composeNode}.outputMatrix", f"{joint}.offsetParentMatrix")
 
-#     cmds.connectAttr(f"{motionPath}.allCoordinates.xCoordinate", f"{matrix_node}.in30", force=True)
-#     cmds.connectAttr(f"{motionPath}.allCoordinates.yCoordinate", f"{matrix_node}.in31", force=True)
-#     cmds.connectAttr(f"{motionPath}.allCoordinates.zCoordinate", f"{matrix_node}.in32", force=True)
+        
 
-#     # cmds.setAttr(f"{point_on_surface}.turnOnPercentage", 1)
-#     cmds.setAttr(f"{motionPath}.uValue", percentatge)
+        joints.append(joint)
 
-#     matrix_nodes.append(matrix_node)
-
-
-# for i, matrix in enumerate(matrix_nodes):
-#     aimMatrix = cmds.createNode("aimMatrix", name=f"R_ear0{i}_AMX", ss=True)
-#     cmds.connectAttr(f"{matrix}.output", f"{aimMatrix}.inputMatrix", force=True)
-#     try:
-#         cmds.connectAttr(f"{matrix_nodes[i + 1]}.output", f"{aimMatrix}.primaryTargetMatrix", force=True)
-#         cmds.setAttr(f"{aimMatrix}.primaryInputAxis", -1, 0, 0, type="double3")
-
-#     except IndexError:
-#         cmds.connectAttr(f"{matrix_nodes[i - 1]}.output", f"{aimMatrix}.primaryTargetMatrix", force=True)
-#         cmds.setAttr(f"{aimMatrix}.primaryInputAxis", 1, 0, 0, type="double3")
-
-#     joint = cmds.createNode("joint", name=f"R_ear0{i}_JNT", ss=True)
-#     cmds.connectAttr(f"{aimMatrix}.outputMatrix", f"{joint}.offsetParentMatrix", force=True)
-
-
-for aim_matrix in cmds.ls(type="aimMatrix", sl=True):
-    cmds.connectAttr(f"C_head_CTL.worldMatrix[0]", f"{aim_matrix}.secondaryTargetMatrix", force=True)
-    cmds.setAttr(f"{aim_matrix}.secondaryInputAxis", 0, 1, 0, type="double3")
-    cmds.setAttr(f"{aim_matrix}.secondaryTargetVector", 0, 1, 0, type="double3")
-    cmds.setAttr(f"{aim_matrix}.secondaryMode", 2)  # Object Up
+    if "Lower" in bendy:
+        joint = cmds.createNode("joint", name=f"{self.side}_{self.module_name}{bendy}0{i+2}_JNT", ss=True, parent=self.skinnging_grp)
+        cmds.connectAttr(cvMatrices[-1], f"{joint}.offsetParentMatrix")
+        joints.append(joint)
