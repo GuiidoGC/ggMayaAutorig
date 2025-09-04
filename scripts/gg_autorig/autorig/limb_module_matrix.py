@@ -12,16 +12,19 @@ from gg_autorig.utils import data_export
 # Dev only imports
 from gg_autorig.utils.guides import guides_manager
 import gg_autorig.utils.de_boors_core as de_boors
+import gg_autorig.utils.de_boor_core_002 as de_boors_002
 from gg_autorig.utils import space_switch as ss
 from gg_autorig.utils import core
 from gg_autorig.utils import basic_structure
 
 
 reload(de_boors)
+reload(de_boors_002)
 reload(guides_manager)
 reload(ss)
 reload(core)
 
+AXIS_VECTOR = {'x': (1, 0, 0), '-x': (-1, 0, 0), 'y': (0, 1, 0), '-y': (0, -1, 0), 'z': (0, 0, 1), '-z': (0, 0, -1)}
 
 class LimbModule(object):
 
@@ -60,6 +63,9 @@ class LimbModule(object):
         self.individual_module_grp = cmds.createNode("transform", name=f"{self.side}_{self.module_name}Module_GRP", parent=self.modules_grp, ss=True)
         self.individual_controllers_grp = cmds.createNode("transform", name=f"{self.side}_{self.module_name}Controllers_GRP", parent=self.masterWalk_ctl, ss=True)
         self.skinnging_grp = cmds.createNode("transform", name=f"{self.side}_{self.module_name}SkinningJoints_GRP", parent=self.skel_grp, ss=True)
+        
+        self.primary_aim_vector = om.MVector(AXIS_VECTOR[self.primary_aim])
+        self.secondary_aim_vector = om.MVector(AXIS_VECTOR[self.secondary_aim])
 
         cmds.addAttr(self.skinnging_grp, longName="moduleName", attributeType="enum", enumName=self.enum_str, keyable=False)
 
@@ -73,8 +79,8 @@ class LimbModule(object):
             aim_matrix = cmds.createNode("aimMatrix", name=f"{self.side}_{self.module_name}Guide0{i+1}_AMX", ss=True)
             multmatrix = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}GuideOffset0{i+1}_MMX", ss=True)
 
-            cmds.setAttr(aim_matrix + ".primaryInputAxis", *self.primary_aim, type="double3")
-            cmds.setAttr(aim_matrix + ".secondaryInputAxis", *self.secondary_aim, type="double3")
+            cmds.setAttr(aim_matrix + ".primaryInputAxis", *self.primary_aim_vector, type="double3")
+            cmds.setAttr(aim_matrix + ".secondaryInputAxis", *self.secondary_aim_vector, type="double3")
             
             cmds.setAttr(aim_matrix + ".primaryMode", 1)
             cmds.setAttr(aim_matrix + ".secondaryMode", 1)
@@ -544,7 +550,7 @@ class LimbModule(object):
         cmds.connectAttr(f"{self.ikHandleManager}", f"{upper_arm_ik_aim_matrix}.primaryTargetMatrix")
         cmds.connectAttr(f"{self.pv_ik_ctl}.worldMatrix", f"{upper_arm_ik_aim_matrix}.secondaryTargetMatrix")
         cmds.connectAttr(f"{self.root_ik_ctl}.worldMatrix", f"{upper_arm_ik_aim_matrix}.inputMatrix")
-        cmds.setAttr(f"{upper_arm_ik_aim_matrix}.primaryInputAxis", *self.primary_aim, type="double3")
+        cmds.setAttr(f"{upper_arm_ik_aim_matrix}.primaryInputAxis", *self.primary_aim_vector, type="double3")
 
         self.upperArmIkWM = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}UpperIkWM_MMX", ss=True)
         fourByfour = cmds.createNode("fourByFourMatrix", name=f"{self.side}_{self.module_name}UpperIkLocal_F4X", ss=True)
@@ -684,9 +690,9 @@ class LimbModule(object):
         cmds.connectAttr(f"{nonRollPick}.outputMatrix", f"{nonRollAim}.inputMatrix")
         cmds.connectAttr(f"{nonRollAlign}.outputMatrix", f"{nonRollAim}.secondaryTargetMatrix")
         cmds.connectAttr(f"{self.blend_wm[1]}", f"{nonRollAim}.primaryTargetMatrix")
-        cmds.setAttr(f"{nonRollAim}.primaryInputAxis", *self.primary_aim, type="double3")
-        cmds.setAttr(f"{nonRollAim}.secondaryInputAxis", *self.secondary_aim, type="double3")
-        cmds.setAttr(f"{nonRollAim}.secondaryTargetVector", *self.secondary_aim, type="double3")
+        cmds.setAttr(f"{nonRollAim}.primaryInputAxis", *self.primary_aim_vector, type="double3")
+        cmds.setAttr(f"{nonRollAim}.secondaryInputAxis", *self.secondary_aim_vector, type="double3")
+        cmds.setAttr(f"{nonRollAim}.secondaryTargetVector", *self.secondary_aim_vector, type="double3")
         cmds.setAttr(f"{nonRollAim}.secondaryMode", 2)
 
         cmds.setAttr(f"{nonRollPick}.useRotate", 0)
@@ -780,89 +786,18 @@ class LimbModule(object):
     
             cvMatrices = [self.blend_wm[i], f"{ctl}.worldMatrix[0]", self.blend_wm[i+1]]
 
-            joints = []
-
             self.twist_number = 5
 
+            t_values = []
             for i in range(self.twist_number):
                 t = 0.95 if i == self.twist_number - 1 else i / (float(self.twist_number) - 1)
-                joint = cmds.createNode("joint", name=f"{self.side}_{self.module_name}{bendy}0{i+1}_JNT", ss=True, parent=self.skinnging_grp)
+                t_values.append(t)
 
-                pointMatrixWeights = de_boors.pointOnCurveWeights(cvMatrices, t, degree=2)
+            if bendy == "LowerBendy":
+                t_values.append(1)
+                self.twist_number += 1
 
-                pma_node = cmds.createNode('plusMinusAverage', name=f"{self.side}_{self.module_name}{bendy}0{i+1}_PMA", ss=True)
-                cmds.setAttr(f"{pma_node}.operation", 1)
-
-                pointMatrixNode = cmds.createNode("wtAddMatrix", name=f"{self.side}_{self.module_name}{bendy}0{i+1}_PMX", ss=True)
-                pointMatrix = f"{pointMatrixNode}.matrixSum"
-
-                # Scale preservation
-                for index, (matrix, weight) in enumerate(pointMatrixWeights):
-                    md = cmds.createNode('multiplyDivide', name=f"{self.side}_{self.module_name}{bendy}0{i+1}_MDV", ss=True)
-                    cmds.setAttr(f"{md}.input2X", weight)
-                    cmds.setAttr(f"{md}.input2Y", weight)
-                    cmds.setAttr(f"{md}.input2Z", weight)
-                    decomposeNode = cmds.createNode("decomposeMatrix", name=f"{self.side}_{self.module_name}{bendy}0{i+1}_DCM", ss=True)
-                    cmds.connectAttr(f"{matrix}", f"{decomposeNode}.inputMatrix", force=True)
-                    cmds.connectAttr(f"{decomposeNode}.outputScale", f"{md}.input1", force=True)               
-
-                    cmds.connectAttr(f"{md}.output", f"{pma_node}.input3D[{index}]", force=True)
-
-                # Joint positioning
-                for index, (matrix, weight) in enumerate(pointMatrixWeights):
-                    cmds.connectAttr(matrix, f"{pointMatrixNode}.wtMatrix[{index}].matrixIn")
-                    float_constant = cmds.createNode("floatConstant", name=f"{self.side}_{self.module_name}{bendy}0{i+1}_FLM", ss=True)
-                    cmds.setAttr(f"{float_constant}.inFloat", weight)
-                    cmds.connectAttr(f"{float_constant}.outFloat", f"{pointMatrixNode}.wtMatrix[{index}].weightIn", force=True)
-                
-                # Joint Tangent Matrix
-                tangentMatrixWeights = de_boors.tangentOnCurveWeights(cvMatrices, t, degree=2)
-
-                tangentMatrixNode = cmds.createNode("wtAddMatrix", name=f"{self.side}_{self.module_name}{bendy}0{i+1}_WTADD", ss=True)
-                tangentMatrix = f"{tangentMatrixNode}.matrixSum"
-                for index, (matrix, weight) in enumerate(tangentMatrixWeights):
-                    cmds.connectAttr(matrix, f"{tangentMatrixNode}.wtMatrix[{index}].matrixIn")
-                    float_constant = cmds.createNode("floatConstant", name=f"{self.side}_{self.module_name}{bendy}0{i+1}_FLM", ss=True)
-                    cmds.setAttr(f"{float_constant}.inFloat", weight)
-                    cmds.connectAttr(f"{float_constant}.outFloat", f"{tangentMatrixNode}.wtMatrix[{index}].weightIn", force=True)
-
-                aimMatrixNode = cmds.createNode("aimMatrix", name=f"{self.side}_{self.module_name}{bendy}0{i+1}_AMX", ss=True)
-                cmds.connectAttr(pointMatrix, f"{aimMatrixNode}.inputMatrix")
-                cmds.connectAttr(tangentMatrix, f"{aimMatrixNode}.primaryTargetMatrix")
-                cmds.setAttr(f"{aimMatrixNode}.primaryMode", 1)
-                cmds.setAttr(f"{aimMatrixNode}.primaryInputAxis", *self.primary_aim)
-                cmds.setAttr(f"{aimMatrixNode}.secondaryInputAxis", *self.secondary_aim)
-                cmds.setAttr(f"{aimMatrixNode}.secondaryMode", 0)
-                aimMatrixOutput = f"{aimMatrixNode}.outputMatrix"
-
-                pickMatrixNode = cmds.createNode("pickMatrix", name=f"{self.side}_{self.module_name}{bendy}0{i+1}_PKMX", ss=True)
-                cmds.connectAttr(aimMatrixOutput, f"{pickMatrixNode}.inputMatrix")
-                cmds.setAttr(f"{pickMatrixNode}.useScale", False)
-                cmds.setAttr(f"{pickMatrixNode}.useShear", False)
-                outputMatrix = f"{pickMatrixNode}.outputMatrix"
-
-                decomposeNode = cmds.createNode("decomposeMatrix", name=f"{self.side}_{self.module_name}{bendy}0{i+1}_DCM", ss=True)
-                cmds.connectAttr(outputMatrix, f"{decomposeNode}.inputMatrix")
-
-                composeNode = cmds.createNode("composeMatrix", name=f"{self.side}_{self.module_name}{bendy}0{i+1}_CPM", ss=True)
-                cmds.connectAttr(f"{decomposeNode}.outputTranslate", f"{composeNode}.inputTranslate")   
-                cmds.connectAttr(f"{decomposeNode}.outputRotate", f"{composeNode}.inputRotate")
-
-                cmds.connectAttr(f"{pma_node}.output3D", f"{composeNode}.inputScale", force=True)
-
-
-
-                cmds.connectAttr(f"{composeNode}.outputMatrix", f"{joint}.offsetParentMatrix")
-
-                
-
-                joints.append(joint)
-
-            if "Lower" in bendy:
-                joint = cmds.createNode("joint", name=f"{self.side}_{self.module_name}{bendy}0{i+2}_JNT", ss=True, parent=self.skinnging_grp)
-                cmds.connectAttr(cvMatrices[-1], f"{joint}.offsetParentMatrix")
-                joints.append(joint)
-
+            de_boors_002.de_boor_ribbon(aim_axis=self.primary_aim, up_axis=self.secondary_aim, cvs= cvMatrices, num_joints=self.twist_number, name = f"{self.side}_{self.module_name}{bendy}", parent=self.skinnging_grp, custom_parm=t_values)
 
     def scapula(self):
 
@@ -877,7 +812,11 @@ class LimbModule(object):
         aim_matrix_scapula = cmds.createNode("aimMatrix", name=f"{self.side}_scapula_AIM", ss=True)
         cmds.connectAttr(f"{self.scapula_guide}.worldMatrix[0]", f"{aim_matrix_scapula}.inputMatrix")
         cmds.connectAttr(f"{self.guides_matrix[0]}.outputMatrix", f"{aim_matrix_scapula}.primaryTargetMatrix")
-        cmds.setAttr(f"{aim_matrix_scapula}.primaryInputAxis", *self.primary_aim, type="double3")
+        cmds.connectAttr(f"{self.guides_matrix[0]}.outputMatrix", f"{aim_matrix_scapula}.secondaryTargetMatrix")
+        cmds.setAttr(f"{aim_matrix_scapula}.primaryInputAxis", *self.primary_aim_vector, type="double3")
+        cmds.setAttr(f"{aim_matrix_scapula}.secondaryInputAxis", *self.secondary_aim_vector, type="double3")
+        cmds.setAttr(f"{aim_matrix_scapula}.secondaryTargetVector", *self.secondary_aim_vector, type="double3")
+        cmds.setAttr(f"{aim_matrix_scapula}.secondaryMode", 1)
 
         cmds.connectAttr(f"{aim_matrix_scapula}.outputMatrix", f"{self.scapula_ctl_grp[0]}.offsetParentMatrix")
 
@@ -1152,12 +1091,12 @@ class ArmModule(LimbModule):
 
         # Arm-specific setup
         if self.side == "L":
-            self.primary_aim = (1, 0, 0)
-            self.secondary_aim = (0, -1, 0)
+            self.primary_aim = "x"
+            self.secondary_aim = "-y"
 
         elif self.side == "R":
-            self.primary_aim = (-1, 0, 0)
-            self.secondary_aim = (0, 1, 0)
+            self.primary_aim = "-x"
+            self.secondary_aim = "y"
 
         self.default_ik = 1
 
@@ -1210,12 +1149,12 @@ class FrontLegModule(LimbModule):
 
         # Arm-specific setup
         if self.side == "L":
-            self.primary_aim = (1, 0, 0)
-            self.secondary_aim = (0, -1, 0)
+            self.primary_aim = "x"
+            self.secondary_aim = "-y"
 
         elif self.side == "R":
-            self.primary_aim = (-1, 0, 0)
-            self.secondary_aim = (0, 1, 0)
+            self.primary_aim = "-x"
+            self.secondary_aim = "y"
 
         self.default_ik = 0
 
@@ -1266,14 +1205,12 @@ class BackLegModule(LimbModule):
 
         # Leg-specific setup
         if self.side == "L":
-            self.primary_aim = (1, 0, 0)
-            self.secondary_aim = (0, 0, -1)
-            self.prefered_angle = (0, 1, 0)
+            self.primary_aim = "x"
+            self.secondary_aim = "-z"
 
         elif self.side == "R":
-            self.primary_aim = (-1, 0, 0)
-            self.secondary_aim = (0, 0, 1)
-            self.prefered_angle = (0, 1, 0)
+            self.primary_aim = "-x"
+            self.secondary_aim = "z"
 
         self.default_ik = 0
 
@@ -1324,13 +1261,13 @@ class LegModule(LimbModule):
 
         # Leg-specific setup
         if self.side == "L":
-            self.primary_aim = (1, 0, 0)
-            self.secondary_aim = (0, -1, 0)
+            self.primary_aim = "x"
+            self.secondary_aim = "-y"
 
 
         elif self.side == "R":
-            self.primary_aim = (-1, 0, 0)
-            self.secondary_aim = (0, 1, 0)
+            self.primary_aim = "-x"
+            self.secondary_aim = "y"
 
         self.default_ik = 0
 

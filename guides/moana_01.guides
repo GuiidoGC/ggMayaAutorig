@@ -192,31 +192,31 @@
             "moduleName": "leg",
             "prefix": "Child"
         },
-        "L_bankOutHeel_GUIDE": {
+        "L_heel_GUIDE": {
             "worldPosition": [
                 0.0,
                 0.0,
                 0.0
             ],
-            "parent": "L_bankOutBankIn_GUIDE",
+            "parent": "L_bankIn_GUIDE",
             "jointTwist": "Child",
             "type": "Child",
             "moduleName": "Child",
             "prefix": "Child"
         },
-        "L_bankOutBankIn_GUIDE": {
+        "L_bankIn_GUIDE": {
             "worldPosition": [
                 0.0,
                 0.0,
                 0.0
             ],
-            "parent": "L_bankOutBankOut_GUIDE",
+            "parent": "L_bankOut_GUIDE",
             "jointTwist": "Child",
             "type": "Child",
             "moduleName": "Child",
             "prefix": "Child"
         },
-        "L_bankOutBankOut_GUIDE": {
+        "L_bankOut_GUIDE": {
             "worldPosition": [
                 0.0,
                 0.0,
@@ -300,31 +300,31 @@
             "moduleName": "leg",
             "prefix": "Child"
         },
-        "R_bankOutHeel_GUIDE": {
+        "R_heel_GUIDE": {
             "worldPosition": [
                 0.0,
                 0.0,
                 0.0
             ],
-            "parent": "R_bankOutBankIn_GUIDE",
+            "parent": "R_bankIn_GUIDE",
             "jointTwist": "Child",
             "type": "Child",
             "moduleName": "Child",
             "prefix": "Child"
         },
-        "R_bankOutBankIn_GUIDE": {
+        "R_bankIn_GUIDE": {
             "worldPosition": [
                 0.0,
                 0.0,
                 0.0
             ],
-            "parent": "R_bankOutBankOut_GUIDE",
+            "parent": "R_bankOut_GUIDE",
             "jointTwist": "Child",
             "type": "Child",
             "moduleName": "Child",
             "prefix": "Child"
         },
-        "R_bankOutBankOut_GUIDE": {
+        "R_bankOut_GUIDE": {
             "worldPosition": [
                 0.0,
                 0.0,
