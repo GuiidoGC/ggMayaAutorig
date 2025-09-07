@@ -102,7 +102,7 @@ def de_boor(n, d, t, kv, tol=0.000001):
 
 def de_boor_ribbon(cvs, aim_axis='x', up_axis='y', num_joints=5, tangent_offset=0.001, d=None, kv_type=OPEN,
                    param_from_length=True, tol=0.000001, name='ribbon', use_position=True, use_tangent=True,
-                   use_up=True, use_scale=True, custom_parm = [], parent=None):
+                   use_up=True, use_scale=True, custom_parm = [], parent=None, axis_change=False):
     """
     Use controls and de_boor function to get position, tangent and up values for joints.  The param_from_length can
     be used to get the parameter values using a fraction of the curve length, otherwise the parameter values will be
@@ -325,7 +325,19 @@ def de_boor_ribbon(cvs, aim_axis='x', up_axis='y', num_joints=5, tangent_offset=
             up_off_val = temp_mat * up_inverse
 
             up_off = cmds.createNode('multMatrix', n=f'{name}UpOffset0{i}_MM', ss=True)
-            cmds.setAttr(f'{up_off}.matrixIn[0]', list(up_off_val), type='matrix')
+            # cmds.setAttr(f'{up_off}.matrixIn[0]', list(up_off_val), type='matrix')
+            print(axis_change, f"{len(params)-1} == {i}")
+            if axis_change and len(params)-1 == i:
+                print(aim)
+                cmds.setAttr(f'{up_off}.matrixIn[0]', [1, 0, 0, 0,
+                                                   0, 1, 0, 0,
+                                                   0, 0, 1, 0,
+                                                  -4, 0, 0, 0], type='matrix')
+            else:
+                cmds.setAttr(f'{up_off}.matrixIn[0]', [1, 0, 0, 0,
+                                        0, 1, 0, 0,
+                                        0, 0, 1, 0,
+                                        0, 4, 0, 0], type='matrix')
             cmds.connectAttr(f'{up}.matrixSum', f'{up_off}.matrixIn[1]')
 
             up_plug = f'{up_off}.matrixSum'
@@ -367,9 +379,9 @@ def de_boor_ribbon(cvs, aim_axis='x', up_axis='y', num_joints=5, tangent_offset=
         output_plug = f'{aim}.outputMatrix'
 
         cmds.setAttr(f'{aim}.primaryInputAxis', *aim_vector)
-        cmds.setAttr(f'{aim}.secondaryInputAxis', *AXIS_VECTOR[up_axis])
-        cmds.setAttr(f'{aim}.secondaryMode', 2)
-        cmds.setAttr(f'{aim}.secondaryTargetVector', *AXIS_VECTOR[up_axis])
+        cmds.setAttr(f'{aim}.secondaryInputAxis', *AXIS_VECTOR[up_axis]*-1)
+        cmds.setAttr(f'{aim}.secondaryMode', 1)
+        cmds.setAttr(f'{aim}.secondaryTargetVector', *AXIS_VECTOR[up_axis]*-1)
 
         if use_scale:
             scale_wam = create_wt_add_matrix(sca_off_plugs, wts, f'{name}Scale0{i}_WAM', tol=tol)
