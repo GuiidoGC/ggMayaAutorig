@@ -179,128 +179,6 @@ class falangeModule(object):
 
         self.ik_rig()
 
-    def create_matrix_pole_vector(self, m1_attr, m2_attr, m3_attr, pole_distance=1.0, name="poleVector_LOC"):
-        """
-        Given three matrix attributes (e.g. joint.worldMatrix[0]), compute a proper pole vector
-        position using Maya matrix and math nodes (no Python vector math).
-        """
-        def matrix_to_translation(matrix_attr, prefix):
-            dm = cmds.createNode('rowFromMatrix', name=f"{self.side}_{self.module_name}Pv{prefix.capitalize()}Offset_RFM", ss=True)
-            cmds.connectAttr(matrix_attr, f'{dm}.matrix')
-            cmds.setAttr(f'{dm}.input', 3)
-            return f'{dm}.output'
-
-        def create_vector_subtract(name, inputA, inputB):
-            node = cmds.createNode('plusMinusAverage', name=f"{self.side}_{self.module_name}Pv{name.capitalize()}_PMA", ss=True)
-            cmds.setAttr(f'{node}.operation', 2)
-            for i, input in enumerate([inputA, inputB]):
-                try:
-                    cmds.connectAttr(input, f'{node}.input3D[{i}]')
-                except:
-                    for attr in ["X", "Y", "Z"]:
-                        cmds.connectAttr(f'{input}.output{attr}', f'{node}.input3D[{i}].input3D{attr.lower()}')
-            return node, f'{node}.output3D'
-
-        def normalize_vector(input_vec, name):
-            vp = cmds.createNode('normalize', name=f"{self.side}_{self.module_name}Pv{name.capitalize()}_NRM", ss=True)
-            cmds.connectAttr(input_vec, f'{vp}.input')
-            return f'{vp}.output'
-
-        def scale_vector(input_vec, scalar_attr, name):
-            md = cmds.createNode('multiplyDivide', name=f"{self.side}_{self.module_name}Pv{name.capitalize()}_MDV", ss=True)
-            cmds.setAttr(f'{md}.operation', 1)
-            cmds.connectAttr(input_vec, f'{md}.input1')
-            for axis in 'XYZ':
-                cmds.connectAttr(scalar_attr, f'{md}.input2{axis}')
-            return md, f'{md}.output'
-
-        def add_vectors(vecA, vecB, name):
-            node = cmds.createNode('plusMinusAverage', name=f"{self.side}_{self.module_name}Pv{name.capitalize()}_PMA", ss=True)
-            for i, vector in enumerate([vecA, vecB]):
-                try:
-                    cmds.connectAttr(vector, f'{node}.input3D[{i}]')
-                except:
-                    for attr in ["X", "Y", "Z"]:
-                        cmds.connectAttr(f'{vector}.output{attr}', f'{node}.input3D[{i}].input3D{attr.lower()}')
-            return node, f'{node}.output3D'
-
-        vec1_attr = matrix_to_translation(m1_attr, 'vec1')
-        vec2_attr = matrix_to_translation(m2_attr, 'vec2')
-        vec3_attr = matrix_to_translation(m3_attr, 'vec3')
-
-        dist1 = cmds.createNode('distanceBetween', name=f"{self.side}_{self.module_name}PvVec1Vec2_DBT", ss=True)
-        for attr in ["X", "Y", "Z"]:
-            cmds.connectAttr(f'{vec1_attr}{attr}', f'{dist1}.point1{attr}')
-            cmds.connectAttr(f'{vec2_attr}{attr}', f'{dist1}.point2{attr}')
-
-        dist2 = cmds.createNode('distanceBetween', name=f"{self.side}_{self.module_name}PvVec2Vec3_DBT", ss=True)
-        for attr in ["X", "Y", "Z"]:
-            cmds.connectAttr(f'{vec2_attr}{attr}', f'{dist2}.point1{attr}')
-            cmds.connectAttr(f'{vec3_attr}{attr}', f'{dist2}.point2{attr}')
-
-        avg = cmds.createNode('sum', name=f"{self.side}_{self.module_name}PvAvgDist_SUM", ss=True)
-        cmds.connectAttr(f'{dist1}.distance', f'{avg}.input[0]')
-        cmds.connectAttr(f'{dist2}.distance', f'{avg}.input[1]')
-
-        half = cmds.createNode('divide', name=f"{self.side}_{self.module_name}PvHalfDist_DIV", ss=True)
-        cmds.setAttr(f'{half}.input2', 2.0 / pole_distance)
-        cmds.connectAttr(f'{avg}.output', f'{half}.input1')
-
-        vec1_sub_node, vec1_sub = create_vector_subtract('vec1MinusVec2', vec1_attr, vec2_attr)
-        vec1_norm = normalize_vector(vec1_sub, 'vec1Norm')
-
-        vec3_sub_node, vec3_sub = create_vector_subtract('vec3MinusVec2', vec3_attr, vec2_attr)
-        vec3_norm = normalize_vector(vec3_sub, 'vec3Norm')
-
-        vec1_scaled_node, vec1_scaled = scale_vector(vec1_norm, f'{half}.output', 'vec1Scaled')
-        vec3_scaled_node, vec3_scaled = scale_vector(vec3_norm, f'{half}.output', 'vec3Scaled')
-
-        vec1_final_node, vec1_final = add_vectors(vec2_attr, vec1_scaled, 'vec1Final')
-        vec3_final_node, vec3_final = add_vectors(vec2_attr, vec3_scaled, 'vec3Final')
-
-        proj_dir_node, proj_dir = create_vector_subtract('projDir', vec3_final, vec1_final)
-
-        proj_dir_norm = normalize_vector(proj_dir, 'projDirNorm')
-
-        vec_to_project_node, vec_to_project = create_vector_subtract('vecToProject', vec2_attr, vec1_final)
-
-        dot_node = cmds.createNode('vectorProduct', name=f"{self.side}_{self.module_name}PvDot_VCP", ss=True)
-        cmds.setAttr(f'{dot_node}.operation', 1)
-        cmds.connectAttr(vec_to_project, f'{dot_node}.input1')
-        cmds.connectAttr(proj_dir_norm, f'{dot_node}.input2')
-
-        proj_vec_node, proj_vec = scale_vector(proj_dir_norm, f'{dot_node}.outputX', 'projVector')
-
-        mid_node, mid = add_vectors(vec1_final, proj_vec, 'midPoint')
-
-        pointer_node, pointer_vec = create_vector_subtract('pointerVec', vec2_attr, mid)
-
-        pointer_norm = normalize_vector(pointer_vec, 'pointerNorm')
-        pointer_scaled_node, pointer_scaled = scale_vector(pointer_norm, f'{half}.output', 'pointerScaled')
-
-        pole_pos_node, pole_pos = add_vectors(vec2_attr, pointer_scaled, 'poleVectorPos')
-
-        fourByFour = cmds.createNode('fourByFourMatrix', name=f"{self.side}_{self.module_name}PvFourByFour_FBM", ss=True)
-        cmds.connectAttr(f"{pole_pos}.output3Dx", f'{fourByFour}.in30')
-        cmds.connectAttr(f"{pole_pos}.output3Dy", f'{fourByFour}.in31')
-        cmds.connectAttr(f"{pole_pos}.output3Dz", f'{fourByFour}.in32')
-
-        aim_matrix = cmds.createNode('aimMatrix', name=f"{self.side}_{self.module_name}PvAim_AMX", ss=True)
-        cmds.setAttr(f'{aim_matrix}.primaryInputAxis', 0, 0, 1, type='double3')
-        cmds.setAttr(f'{aim_matrix}.secondaryInputAxis', 1, 0, 0, type='double3')
-        cmds.setAttr(f'{aim_matrix}.secondaryTargetVector', 1, 0, 0, type='double3')
-        cmds.setAttr(f'{aim_matrix}.primaryMode', 1)
-        cmds.setAttr(f'{aim_matrix}.secondaryMode', 2)
-        cmds.connectAttr(f'{fourByFour}.output', f'{aim_matrix}.inputMatrix')
-        cmds.connectAttr(f'{m2_attr}', f"{aim_matrix}.primaryTargetMatrix")
-        cmds.connectAttr(f'{m2_attr}', f'{aim_matrix}.secondaryTargetMatrix')
-
-        blend_matrix = cmds.createNode('blendMatrix', name=f"{self.side}_{self.module_name}PvBlend_BLM", ss=True)
-        cmds.connectAttr(f'{fourByFour}.output', f'{blend_matrix}.inputMatrix')
-        cmds.connectAttr(f'{aim_matrix}.outputMatrix', f'{blend_matrix}.target[0].targetMatrix')
-
-        return blend_matrix
-
     def ik_rig(self):
         """
         Create IK chain for the limb.
@@ -336,31 +214,169 @@ class falangeModule(object):
 
         cmds.addAttr(self.pv_ik_ctl, shortName="extraAttr", niceName="Extra Attributes  ———", enumName="———",attributeType="enum", keyable=True)
         cmds.setAttr(self.pv_ik_ctl+".extraAttr", channelBox=True, lock=True)
-        cmds.addAttr(self.pv_ik_ctl, shortName="pvOrientation", niceName="Pv Orientation",defaultValue=0, minValue=0, maxValue=1, keyable=True)
-
-        cmds.addAttr(self.pv_ik_ctl, shortName="poleVectorPinning", niceName="Pole Vector Pinning ———", enumName="———",attributeType="enum", keyable=True)
-        cmds.setAttr(self.pv_ik_ctl+".poleVectorPinning", channelBox=True, lock=True)
-        cmds.addAttr(self.pv_ik_ctl, shortName="pin", niceName="Pin",minValue=0,maxValue=1,defaultValue=0, keyable=True)
         
         cmds.connectAttr(f"{self.guides_matrix[0]}.outputMatrix", f"{self.root_ik_ctl_grp[0]}.offsetParentMatrix")      
 
+        temp_trn = cmds.createNode("transform", name=f"{self.side}_{self.module_name}PV_Transform", ss=True)
+        cmds.connectAttr(f"{self.guides_matrix[1]}.outputMatrix", f"{temp_trn}.offsetParentMatrix")
+        cmds.matchTransform(self.pv_ik_ctl_grp[0], temp_trn)
+        cmds.delete(temp_trn)
 
-        pv_pos = self.create_matrix_pole_vector(
-            f"{self.guides_matrix[0]}.outputMatrix",
-            f"{self.guides_matrix[1]}.outputMatrix",
-            f"{self.guides_matrix[2]}.outputMatrix",
-            name=f"{self.side}_{self.module_name}PV"
-        )
-
-        cmds.connectAttr(f"{self.pv_ik_ctl}.pvOrientation", f"{pv_pos}.target[0].weight")
-        cmds.connectAttr(f"{pv_pos}.outputMatrix", f"{self.pv_ik_ctl_grp[0]}.offsetParentMatrix")
-
-        name = [f"{self.side}_{self.module_name}UpperInitialLength", f"{self.side}_{self.module_name}LowerInitialLength", f"{self.side}_{self.module_name}CurrentLength"]
+        name = [f"{self.side}_{self.module_name}SecondaryUpperInitialLength", f"{self.side}_{self.module_name}SecondaryLowerInitialLength", f"{self.side}_{self.module_name}SecondaryCurrentLength"]
 
         self.ikHandleManager = f"{self.hand_ik_ctl}.worldMatrix[0]"
 
         self.distance_between_output = []
-        for i, (first, second) in enumerate(zip([f"{self.guides[0]}.worldMatrix[0]", f"{self.guides[1]}.worldMatrix[0]", f"{self.root_ik_ctl}.worldMatrix[0]"], [f"{self.guides[1]}.worldMatrix[0]", f"{self.guides[3]}.worldMatrix[0]", f"{self.ikHandleManager}"])):
+        for i, (first, second) in enumerate(zip([f"{self.guides[1]}.worldMatrix[0]", f"{self.guides[2]}.worldMatrix[0]", f"{self.guides[1]}.worldMatrix[0]"], [f"{self.guides[2]}.worldMatrix[0]", f"{self.guides[3]}.worldMatrix[0]", f"{self.ikHandleManager}"])):
+            distance = cmds.createNode("distanceBetween", name=f"{name[i]}_DB", ss=True)
+            cmds.connectAttr(f"{first}", f"{distance}.inMatrix1")
+            cmds.connectAttr(f"{second}", f"{distance}.inMatrix2")
+
+            if i == 2:
+                global_scale_divide = cmds.createNode("divide", name=f"{self.side}_{self.module_name}SecondaryGlobalScaleFactor_DIV", ss=True)
+                cmds.connectAttr(f"{self.masterWalk_ctl}.globalScale", f"{global_scale_divide}.input2")
+                cmds.connectAttr(f"{distance}.distance", f"{global_scale_divide}.input1")
+                self.distance_between_output.append(f"{global_scale_divide}.output")
+            else:
+                self.distance_between_output.append(f"{distance}.distance")
+
+        distance_1 = cmds.getAttr(self.distance_between_output[0])
+        distance_2 = cmds.getAttr(self.distance_between_output[1])
+        cmds.move(0, distance_1+distance_2, 0, self.pv_ik_ctl_grp[0], r=True, os=True, wd=True)
+
+        # --- STRETCH --- #
+
+        arm_length = cmds.createNode("sum", name=f"{self.side}_{self.module_name}SecondaryLength_SUM", ss=True)
+        cmds.connectAttr(f"{self.distance_between_output[0]}", f"{arm_length}.input[0]")
+        cmds.connectAttr(f"{self.distance_between_output[1]}", f"{arm_length}.input[1]")
+
+        arm_length_min = cmds.createNode("min", name=f"{self.side}_{self.module_name}SecondaryClampedLength_MIN", ss=True)
+        cmds.connectAttr(f"{arm_length}.output", f"{arm_length_min}.input[0]")
+        cmds.connectAttr(f"{self.distance_between_output[2]}", f"{arm_length_min}.input[1]")
+
+
+        print(self.distance_between_output)
+        # --- CUSTOM SOLVER --- #
+
+        upper_divide, upper_arm_acos, power_mults = core.law_of_cosine(sides = [f"{self.distance_between_output[0]}", f"{self.distance_between_output[1]}", f"{arm_length_min}.output"], name = f"{self.side}_{self.module_name}Upper", acos=True)
+        lower_divide, lower_power_mults, negate_cos_value = core.law_of_cosine(sides = [f"{self.distance_between_output[0]}", f"{arm_length_min}.output", f"{self.distance_between_output[1]}"],
+                                                                            power = [power_mults[0], power_mults[2], power_mults[1]],
+                                                                            name = f"{self.side}_{self.module_name}Lower", 
+                                                                            negate=True)
+
+        # --- Aligns --- #
+
+        upper_arm_ik_aim_matrix = cmds.createNode("aimMatrix", name=f"{self.side}_{self.module_name}SecondaryUpperIk_AIM", ss=True)
+        cmds.connectAttr(f"{self.ikHandleManager}", f"{upper_arm_ik_aim_matrix}.primaryTargetMatrix")
+        cmds.connectAttr(f"{self.pv_ik_ctl}.worldMatrix", f"{upper_arm_ik_aim_matrix}.secondaryTargetMatrix")
+        cmds.connectAttr(f"{self.guides[1]}.worldMatrix[0]", f"{upper_arm_ik_aim_matrix}.inputMatrix")
+        cmds.setAttr(f"{upper_arm_ik_aim_matrix}.primaryInputAxis", *self.primary_aim_vector, type="double3")
+
+        self.upperArmIkWM = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}SecondaryUpperIkWM_MMX", ss=True)
+        fourByfour = cmds.createNode("fourByFourMatrix", name=f"{self.side}_{self.module_name}SecondaryUpperIkLocal_F4X", ss=True)
+        sin = cmds.createNode("sin", name=f"{self.side}_{self.module_name}SecondaryUpperIkWM_SIN", ss=True)
+        negate = cmds.createNode("negate", name=f"{self.side}_{self.module_name}SecondaryUpperIkWM_NEGATE", ss=True)
+
+        cmds.connectAttr(f"{upper_arm_ik_aim_matrix}.outputMatrix", f"{self.upperArmIkWM}.matrixIn[1]")
+        cmds.connectAttr(f"{fourByfour}.output", f"{self.upperArmIkWM}.matrixIn[0]")
+
+        cmds.connectAttr(f"{upper_divide}.output", f"{fourByfour}.in11")
+        cmds.connectAttr(f"{upper_divide}.output", f"{fourByfour}.in00")
+        cmds.connectAttr(f"{sin}.output", f"{fourByfour}.in01")
+        cmds.connectAttr(f"{negate}.output", f"{fourByfour}.in10")
+
+        cmds.connectAttr(f"{upper_arm_acos}.output", f"{sin}.input")
+        cmds.connectAttr(f"{sin}.output", f"{negate}.input")
+
+        cmds.setAttr(upper_arm_ik_aim_matrix + ".secondaryMode", 1)
+            
+        # Lower
+
+        cosValueSquared = cmds.createNode("multiply", name=f"{self.side}_{self.module_name}SecondaryLowerCosValueSquared_MUL", ss=True)
+        cmds.connectAttr(f"{lower_divide}.output", f"{cosValueSquared}.input[0]")
+        cmds.connectAttr(f"{lower_divide}.output", f"{cosValueSquared}.input[1]")
+
+        lower_sin_value_squared = cmds.createNode("subtract", name=f"{self.side}_{self.module_name}SecondaryLowerSinValueSquared_SUB", ss=True)
+        cmds.connectAttr(f"{cosValueSquared}.output", f"{lower_sin_value_squared}.input2")
+        cmds.setAttr(f"{lower_sin_value_squared}.input1", 1)
+
+        lower_sin_value_squared_clamped = cmds.createNode("max", name=f"{self.side}_{self.module_name}SecondaryLowerSinValueSquared_MAX", ss=True)
+        cmds.connectAttr(f"{lower_sin_value_squared}.output", f"{lower_sin_value_squared_clamped}.input[1]")
+        cmds.setAttr(f"{lower_sin_value_squared_clamped}.input[0]", 0)
+
+        lower_sin = cmds.createNode("power", name=f"{self.side}_{self.module_name}SecondaryLowerSin_POW", ss=True)
+        cmds.connectAttr(f"{lower_sin_value_squared_clamped}.output", f"{lower_sin}.input")
+        cmds.setAttr(f"{lower_sin}.exponent", 0.5)
+
+        negate = cmds.createNode("negate", name=f"{self.side}_{self.module_name}SecondaryLowerSin_NEGATE", ss=True)
+        cmds.connectAttr(f"{lower_sin}.output", f"{negate}.input")
+
+        fourByfour = cmds.createNode("fourByFourMatrix", name=f"{self.side}_{self.module_name}SecondaryLowerIkLocal_F4X", ss=True)
+    
+        cmds.connectAttr(f"{negate_cos_value}.output", f"{fourByfour}.in11")
+        cmds.connectAttr(f"{negate_cos_value}.output", f"{fourByfour}.in00")
+        cmds.connectAttr(f"{lower_sin}.output", f"{fourByfour}.in10")
+        cmds.connectAttr(f"{negate}.output", f"{fourByfour}.in01")
+
+        if self.side == "R":
+            translate_negate = cmds.createNode("negate", name=f"{self.side}_{self.module_name}SecondaryUpperTranslate_NEGATE", ss=True)
+            cmds.connectAttr(f"{self.distance_between_output[0]}", f"{translate_negate}.input")
+            cmds.connectAttr(f"{translate_negate}.output", f"{fourByfour}.in30")
+            cmds.setAttr(upper_arm_ik_aim_matrix + ".secondaryInputAxis", 0, -1, 0, type="double3") ########################## CAMBIO QUIZAS
+
+        else:
+            cmds.connectAttr(f"{self.distance_between_output[0]}", f"{fourByfour}.in30")
+            cmds.setAttr(upper_arm_ik_aim_matrix + ".secondaryInputAxis", 0, 1, 0, type="double3") ########################## CAMBIO QUIZAS
+
+
+        lower_wm_multmatrix = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}SecondaryLowerIkWM_MMX", ss=True)
+        cmds.connectAttr(f"{fourByfour}.output", f"{lower_wm_multmatrix}.matrixIn[0]")
+        cmds.connectAttr(f"{self.upperArmIkWM}.matrixSum", f"{lower_wm_multmatrix}.matrixIn[1]")
+
+        # Hand
+
+        lower_inverse_matrix = cmds.createNode("inverseMatrix", name=f"{self.side}_{self.module_name}SecondaryLowerIkInverse_MTX", ss=True)
+        cmds.connectAttr(f"{lower_wm_multmatrix}.matrixSum", f"{lower_inverse_matrix}.inputMatrix")
+
+        hand_local_matrix_multmatrix = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}SecondaryEndBaseLocal_MMX", ss=True)
+        cmds.connectAttr(f"{self.ikHandleManager}", f"{hand_local_matrix_multmatrix}.matrixIn[0]")
+        cmds.connectAttr(f"{lower_inverse_matrix}.outputMatrix", f"{hand_local_matrix_multmatrix}.matrixIn[1]")
+
+        hand_local_matrix = cmds.createNode("fourByFourMatrix", name=f"{self.side}_{self.module_name}SecondaryEndLocal_F4X", ss=True)
+
+        hand_wm_multmatrix = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}SecondaryEndWM_MMX", ss=True)
+        cmds.connectAttr(f"{hand_local_matrix}.output", f"{hand_wm_multmatrix}.matrixIn[0]")
+        cmds.connectAttr(f"{lower_wm_multmatrix}.matrixSum", f"{hand_wm_multmatrix}.matrixIn[1]")
+
+
+        for i in range(0, 3):
+            row_from_matrix = cmds.createNode("rowFromMatrix", name=f"{self.side}_{self.module_name}SecondaryEndLocalAxis{i}_RFM", ss=True)
+            cmds.connectAttr(f"{hand_local_matrix_multmatrix}.matrixSum", f"{row_from_matrix}.matrix")
+            cmds.setAttr(f"{row_from_matrix}.input", i)
+            for z, attr in enumerate(["X", "Y", "Z", "W"]):
+                cmds.connectAttr(f"{row_from_matrix}.output{attr}", f"{hand_local_matrix}.in{i}{z}")
+
+        if self.side == "R":
+            translate_negate = cmds.createNode("negate", name=f"{self.side}_{self.module_name}SecondaryLowerTranslate_NEGATE", ss=True)
+            cmds.connectAttr(f"{self.distance_between_output[1]}", f"{translate_negate}.input")
+            cmds.connectAttr(f"{translate_negate}.output", f"{hand_local_matrix}.in30")
+        else:
+            cmds.connectAttr(f"{self.distance_between_output[1]}", f"{hand_local_matrix}.in30")
+
+        self.ik_wm = [f"{lower_wm_multmatrix}.matrixSum", f"{hand_wm_multmatrix}.matrixSum"]
+        
+        for ik in self.ik_wm:
+            joint = cmds.createNode("joint", name=ik.replace("WM_MMX.matrixSum", "IK_JNT"), ss=True)
+            cmds.connectAttr(ik, f"{joint}.offsetParentMatrix")
+            cmds.setAttr(f"{joint}.radius", 5)
+
+        name = [f"{self.side}_{self.module_name}UpperInitialLength", f"{self.side}_{self.module_name}LowerInitialLength", f"{self.side}_{self.module_name}CurrentLength"]
+
+
+        self.ikHandleManager = f"{lower_wm_multmatrix}.matrixSum"
+        
+        self.distance_between_output = []
+        for i, (first, second) in enumerate(zip([f"{self.guides[0]}.worldMatrix[0]", f"{self.guides[1]}.worldMatrix[0]", f"{self.root_ik_ctl}.worldMatrix[0]"], [f"{self.guides[1]}.worldMatrix[0]", f"{self.guides[2]}.worldMatrix[0]", f"{self.ikHandleManager}"])):
             distance = cmds.createNode("distanceBetween", name=f"{name[i]}_DB", ss=True)
             cmds.connectAttr(f"{first}", f"{distance}.inMatrix1")
             cmds.connectAttr(f"{second}", f"{distance}.inMatrix2")
@@ -372,7 +388,9 @@ class falangeModule(object):
                 self.distance_between_output.append(f"{global_scale_divide}.output")
             else:
                 self.distance_between_output.append(f"{distance}.distance")
+            
 
+        # --- STRETCH --- #
 
         arm_length = cmds.createNode("sum", name=f"{self.side}_{self.module_name}Length_SUM", ss=True)
         cmds.connectAttr(f"{self.distance_between_output[0]}", f"{arm_length}.input[0]")
@@ -382,10 +400,12 @@ class falangeModule(object):
         cmds.connectAttr(f"{arm_length}.output", f"{arm_length_min}.input[0]")
         cmds.connectAttr(f"{self.distance_between_output[2]}", f"{arm_length_min}.input[1]")
 
-        print(arm_length_min)
-            
+
+
+        # --- CUSTOM SOLVER --- #
+
         upper_divide, upper_arm_acos, power_mults = core.law_of_cosine(sides = [f"{self.distance_between_output[0]}", f"{self.distance_between_output[1]}", f"{arm_length_min}.output"], name = f"{self.side}_{self.module_name}Upper", acos=True)
-        lower_divide, lower_power_mults, negate_cos_value = core.law_of_cosine(sides = [f"{self.distance_between_output[0]}", f"{self.distance_between_output[-1]}", f"{arm_length_min}.output"],
+        lower_divide, lower_power_mults, negate_cos_value = core.law_of_cosine(sides = [f"{self.distance_between_output[0]}", f"{arm_length_min}.output", f"{self.distance_between_output[1]}"],
                                                                              power = [power_mults[0], power_mults[2], power_mults[1]],
                                                                              name = f"{self.side}_{self.module_name}Lower", 
                                                                              negate=True)
@@ -444,16 +464,14 @@ class falangeModule(object):
         cmds.connectAttr(f"{lower_sin}.output", f"{fourByfour}.in10")
         cmds.connectAttr(f"{negate}.output", f"{fourByfour}.in01")
 
-        print(self.distance_between_output)
-
         if self.side == "R":
             translate_negate = cmds.createNode("negate", name=f"{self.side}_{self.module_name}UpperTranslate_NEGATE", ss=True)
-            cmds.connectAttr(f"{self.distance_between_output[1]}", f"{translate_negate}.input")
+            cmds.connectAttr(f"{self.distance_between_output[0]}", f"{translate_negate}.input")
             cmds.connectAttr(f"{translate_negate}.output", f"{fourByfour}.in30")
             cmds.setAttr(upper_arm_ik_aim_matrix + ".secondaryInputAxis", 0, -1, 0, type="double3") ########################## CAMBIO QUIZAS
 
         else:
-            cmds.connectAttr(f"{self.distance_between_output[1]}", f"{fourByfour}.in30")
+            cmds.connectAttr(f"{self.distance_between_output[0]}", f"{fourByfour}.in30")
             cmds.setAttr(upper_arm_ik_aim_matrix + ".secondaryInputAxis", 0, 1, 0, type="double3") ########################## CAMBIO QUIZAS
 
 
@@ -463,35 +481,9 @@ class falangeModule(object):
 
         # Hand
 
-        lower_inverse_matrix = cmds.createNode("inverseMatrix", name=f"{self.side}_{self.module_name}LowerIkInverse_MTX", ss=True)
-        cmds.connectAttr(f"{lower_wm_multmatrix}.matrixSum", f"{lower_inverse_matrix}.inputMatrix")
+       
 
-        hand_local_matrix_multmatrix = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}EndBaseLocal_MMX", ss=True)
-        cmds.connectAttr(f"{self.ikHandleManager}", f"{hand_local_matrix_multmatrix}.matrixIn[0]")
-        cmds.connectAttr(f"{lower_inverse_matrix}.outputMatrix", f"{hand_local_matrix_multmatrix}.matrixIn[1]")
-
-        hand_local_matrix = cmds.createNode("fourByFourMatrix", name=f"{self.side}_{self.module_name}EndLocal_F4X", ss=True)
-
-        hand_wm_multmatrix = cmds.createNode("multMatrix", name=f"{self.side}_{self.module_name}EndWM_MMX", ss=True)
-        cmds.connectAttr(f"{hand_local_matrix}.output", f"{hand_wm_multmatrix}.matrixIn[0]")
-        cmds.connectAttr(f"{lower_wm_multmatrix}.matrixSum", f"{hand_wm_multmatrix}.matrixIn[1]")
-
-
-        for i in range(0, 3):
-            row_from_matrix = cmds.createNode("rowFromMatrix", name=f"{self.side}_{self.module_name}EndLocalAxis{i}_RFM", ss=True)
-            cmds.connectAttr(f"{hand_local_matrix_multmatrix}.matrixSum", f"{row_from_matrix}.matrix")
-            cmds.setAttr(f"{row_from_matrix}.input", i)
-            for z, attr in enumerate(["X", "Y", "Z", "W"]):
-                cmds.connectAttr(f"{row_from_matrix}.output{attr}", f"{hand_local_matrix}.in{i}{z}")
-
-        if self.side == "R":
-            translate_negate = cmds.createNode("negate", name=f"{self.side}_{self.module_name}LowerTranslate_NEGATE", ss=True)
-            cmds.connectAttr(f"{self.distance_between_output[1]}", f"{translate_negate}.input")
-            cmds.connectAttr(f"{translate_negate}.output", f"{hand_local_matrix}.in30")
-        else:
-            cmds.connectAttr(f"{self.distance_between_output[1]}", f"{hand_local_matrix}.in30")
-
-        self.ik_wm = [f"{self.upperArmIkWM}.matrixSum", f"{lower_wm_multmatrix}.matrixSum", f"{hand_wm_multmatrix}.matrixSum"]
+        self.ik_wm = [f"{self.upperArmIkWM}.matrixSum", f"{lower_wm_multmatrix}.matrixSum"]
         
         for ik in self.ik_wm:
             joint = cmds.createNode("joint", name=ik.replace("WM_MMX.matrixSum", "IK_JNT"), ss=True)
@@ -655,8 +647,8 @@ class falangeModule(object):
 
 cmds.file(new=True, force=True)
 
-core.DataManager.set_guide_data("H:/ggMayaAutorig/guides/test_03.guides")
-core.DataManager.set_ctls_data("H:/ggMayaAutorig/curves/test_01.ctls")
+core.DataManager.set_guide_data("D:/git/maya/biped_autorig//guides/test_03.guides")
+core.DataManager.set_ctls_data("D:/git/maya/biped_autorig//curves/test_01.ctls")
 
 basic_structure.create_basic_structure(asset_name="moana_02")
 a = falangeModule("L_clavicle_GUIDE").make()
