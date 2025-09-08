@@ -3,7 +3,7 @@
         "L_wrist_GUIDE": {
             "worldPosition": [
                 11.138992727769338,
-                0.0,
+                -0.33160616525808795,
                 0.0
             ],
             "parent": "L_elbow_GUIDE",
@@ -15,7 +15,7 @@
         "L_elbow_GUIDE": {
             "worldPosition": [
                 7.425995151846225,
-                0.0,
+                -0.2496075933096842,
                 0.0
             ],
             "parent": "L_shoulder_GUIDE",
@@ -27,7 +27,7 @@
         "L_shoulder_GUIDE": {
             "worldPosition": [
                 3.7129975759231124,
-                0.0,
+                -0.13915044334510807,
                 0.0
             ],
             "parent": "L_clavicle_GUIDE",
@@ -38,8 +38,8 @@
         },
         "L_armSettings_GUIDE": {
             "worldPosition": [
-                0.0,
-                0.0,
+                2.3516252461108156,
+                4.780075251492174,
                 0.0
             ],
             "parent": "L_clavicle_GUIDE",

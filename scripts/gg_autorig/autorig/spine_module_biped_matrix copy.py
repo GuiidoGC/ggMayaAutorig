@@ -18,7 +18,7 @@ reload(data_export)
 AXIS_VECTOR = {'x': (1, 0, 0), '-x': (-1, 0, 0), 'y': (0, 1, 0), '-y': (0, -1, 0), 'z': (0, 0, 1), '-z': (0, 0, -1)}
 
 
-class NeckModule():
+class SpineModule():
     """
     Class to create a spine module in a Maya rigging setup.
     This module handles the creation of spine joints, controllers, and various systems such as stretch, reverse, offset, squash, and volume preservation.
@@ -186,6 +186,9 @@ class NeckModule():
             ro=True,
             parent=self.controllers_trn
         )
+
+        local_hip_joint = cmds.createNode("joint", n=f"{self.side}_localHip_JNT", p=self.skinning_trn, ss=True)
+        cmds.connectAttr(f"{self.localHip_ctl}.worldMatrix[0]", f"{local_hip_joint}.offsetParentMatrix")
             
         self.body_ctl, body_grp = controller_creator(
             name=f"{self.side}_body",
@@ -387,8 +390,8 @@ class NeckModule():
 
 cmds.file(new=True, force=True)
 
-core.DataManager.set_guide_data("D:/git/maya/biped_autorig/guides/elephant_04.guides")
-core.DataManager.set_ctls_data("D:/git/maya/biped_autorig/curves/body_template_01.ctls")
+core.DataManager.set_guide_data("H:/ggMayaAutorig/guides/elephant_04.guides")
+core.DataManager.set_ctls_data("H:/ggMayaAutorig/curves/body_template_01.ctls")
 
 basic_structure.create_basic_structure(asset_name="elephant_04")
-a = NeckModule().make("C_spine01_GUIDE")
+a = SpineModule().make("C_spine01_GUIDE")
